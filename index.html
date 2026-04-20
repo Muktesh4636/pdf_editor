@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 
   <!-- Primary SEO -->
   <title>PDF Edit Online Free &#8212; Edit PDF Text | Jack pdf Editor</title>
@@ -141,6 +141,7 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: #0f172a;
       min-height: 100vh;
+      min-height: 100dvh;
       color: #e2e8f0;
       overflow-x: hidden;
     }
@@ -149,7 +150,9 @@
     #upload-screen {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      min-height: 100vh; padding: 2rem;
+      min-height: 100vh; min-height: 100dvh;
+      padding: 2rem max(1rem, env(safe-area-inset-right)) 2rem max(1rem, env(safe-area-inset-left));
+      padding-bottom: max(2rem, env(safe-area-inset-bottom));
       background: radial-gradient(ellipse at 50% 0%, #1e1b4b 0%, #0f172a 70%);
       transition: background 0.2s ease;
     }
@@ -193,11 +196,13 @@
     .drop-title { font-size: 1.15rem; font-weight: 600; color: #e2e8f0; margin-bottom: 0.4rem; }
     .drop-hint  { font-size: 0.88rem; color: #64748b; }
     .upload-btn {
-      display: inline-block; margin-top: 1.5rem; padding: 0.65rem 2rem;
+      display: inline-flex; align-items: center; justify-content: center;
+      margin-top: 1.5rem; padding: 0.65rem 2rem; min-height: 44px;
       background: linear-gradient(135deg, #6366f1, #8b5cf6);
       color: white; border: none; border-radius: 10px;
       font-size: 0.95rem; font-weight: 600; cursor: pointer;
       box-shadow: 0 4px 16px rgba(99,102,241,0.35); transition: all 0.2s ease;
+      -webkit-tap-highlight-color: transparent;
     }
     .upload-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.45); }
 
@@ -207,11 +212,12 @@
     .toolbar {
       position: sticky; top: 0; z-index: 200;
       background: #1e293b; border-bottom: 1px solid #334155;
-      padding: 0.7rem 1.25rem;
-      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem max(0.75rem, env(safe-area-inset-left)) 0.65rem max(0.75rem, env(safe-area-inset-right));
+      padding-top: max(0.65rem, env(safe-area-inset-top));
+      display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.65rem;
       box-shadow: 0 2px 12px rgba(0,0,0,0.4);
     }
-    .toolbar-spacer { flex: 1; }
+    .toolbar-spacer { flex: 1 1 auto; min-width: 0; }
     .filename-wrap {
       display: flex; align-items: center; gap: 0.35rem;
       background: rgba(255,255,255,0.06); border: 1px solid transparent;
@@ -222,7 +228,7 @@
     .filename-input {
       background: transparent; border: none; outline: none;
       color: #e2e8f0; font-size: 0.88rem; font-weight: 500;
-      width: 220px; max-width: 40vw;
+      width: 220px; max-width: 40vw; min-width: 0;
     }
     .edit-badge {
       font-size: 0.78rem; background: rgba(99,102,241,0.2);
@@ -230,10 +236,13 @@
       font-weight: 600; display: none;
     }
     .tbtn {
-      padding: 0.45rem 1rem; border: none; border-radius: 8px;
+      padding: 0.5rem 0.85rem; border: none; border-radius: 8px;
       font-size: 0.85rem; font-weight: 600; cursor: pointer;
-      transition: all 0.18s ease; display: flex; align-items: center; gap: 0.35rem;
+      transition: all 0.18s ease; display: inline-flex; align-items: center; justify-content: center;
+      gap: 0.35rem;
       white-space: nowrap;
+      min-height: 44px;
+      -webkit-tap-highlight-color: transparent;
     }
     .tbtn-ghost { background: rgba(255,255,255,0.07); color: #cbd5e1; }
     .tbtn-ghost:hover { background: rgba(255,255,255,0.12); }
@@ -251,20 +260,38 @@
 
     .hint-bar {
       background: rgba(99,102,241,0.08); border-bottom: 1px solid rgba(99,102,241,0.15);
-      padding: 0.45rem 1.25rem; font-size: 0.8rem; color: #94a3b8;
-      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.5rem max(0.75rem, env(safe-area-inset-left)) 0.5rem max(0.75rem, env(safe-area-inset-right));
+      font-size: 0.8rem; color: #94a3b8;
+      display: flex; align-items: flex-start; gap: 0.5rem;
+      line-height: 1.45;
     }
     .hint-dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
 
     .pages-area {
-      flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2rem 1rem;
+      flex: 1; overflow-y: auto; overflow-x: hidden;
+      padding: 1.25rem max(0.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-right));
       background: #0f172a; display: flex; flex-direction: column;
-      align-items: center; gap: 2.5rem;
+      align-items: stretch; gap: 1.75rem;
+    }
+    /* Horizontal pan for wide PDF pages on narrow screens */
+    .page-scroll {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      overflow-y: visible;
+      -webkit-overflow-scrolling: touch;
+      display: flex;
+      justify-content: center;
+      scrollbar-gutter: stable;
+    }
+    .page-scroll .page-wrapper {
+      flex-shrink: 0;
     }
     .page-label {
       font-size: 0.78rem; color: #475569; text-align: center;
       margin-bottom: -2rem; font-weight: 500; letter-spacing: 0.05em;
       text-transform: uppercase;
+      position: relative; z-index: 1;
     }
     .page-wrapper {
       position: relative; border-radius: 4px;
@@ -291,6 +318,7 @@
     /* Loading overlay */
     #loading {
       position: fixed; inset: 0; z-index: 1000;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);
       display: none; flex-direction: column;
       align-items: center; justify-content: center; gap: 1rem;
@@ -306,12 +334,15 @@
 
     /* Toast */
     #toast {
-      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2000;
-      padding: 0.75rem 1.4rem; border-radius: 10px; max-width: 360px;
+      position: fixed; left: max(1rem, env(safe-area-inset-left)); right: max(1rem, env(safe-area-inset-right));
+      bottom: max(1rem, env(safe-area-inset-bottom)); z-index: 2000;
+      margin: 0 auto; max-width: min(360px, calc(100vw - 2rem));
+      padding: 0.75rem 1.1rem; border-radius: 10px;
       font-size: 0.88rem; font-weight: 500; color: white;
       transform: translateY(80px); opacity: 0;
       transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
       pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.35); line-height: 1.4;
+      text-align: center;
     }
     #toast.show  { transform: translateY(0); opacity: 1; }
     #toast.success { background: #10b981; }
@@ -348,6 +379,56 @@
       padding: 0 1rem;
     }
     .faq-item.open .faq-a { max-height: 200px; padding: 0 1rem 0.75rem; }
+
+    /* -------- Mobile & touch -------- */
+    @media (max-width: 768px) {
+      .brand-name, h1.brand-name { font-size: 1.55rem; }
+      .brand-icon { width: 44px; height: 44px; font-size: 1.35rem; }
+      .upload-sub { font-size: 0.92rem; margin-bottom: 1.75rem; padding: 0 0.25rem; }
+      .drop-zone { padding: 2.25rem 1.25rem; border-radius: 16px; }
+      .drop-icon { font-size: 2.75rem; }
+      .seo-intro, .seo-foot { font-size: 0.8rem; margin-left: 0.25rem; margin-right: 0.25rem; }
+      .faq-section { margin-top: 2rem; padding: 0 0.25rem; }
+    }
+
+    @media (max-width: 640px) {
+      .toolbar-spacer { display: none; }
+      .toolbar { gap: 0.45rem; }
+      .filename-wrap {
+        flex: 1 1 100%;
+        order: 5;
+        min-width: 0;
+        max-width: 100%;
+      }
+      .filename-input { width: 100%; max-width: none; font-size: 0.85rem; }
+      .edit-badge { order: 4; }
+      #btn-dl, #btn-save-dl {
+        flex: 1 1 calc(50% - 0.35rem);
+        min-width: 0;
+        font-size: 0.8rem;
+        padding: 0.5rem 0.5rem;
+      }
+      .hint-bar {
+        font-size: 0.72rem;
+      }
+      .pages-area {
+        gap: 1.25rem;
+        padding-top: 1rem;
+      }
+      .page-label { font-size: 0.7rem; margin-bottom: -1rem; }
+    }
+
+    @media (min-width: 641px) {
+      .page-label { margin-bottom: -2rem; }
+    }
+
+    @media (max-width: 400px) {
+      #btn-dl, #btn-save-dl { font-size: 0.74rem; }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .tx { min-height: 1.25em; }
+    }
   </style>
 </head>
 <body>
@@ -555,11 +636,19 @@
     });
   }
 
+  function getViewerScale() {
+    var iw = typeof window !== 'undefined' ? window.innerWidth : 800;
+    if (iw < 400) return 1.05;
+    if (iw < 640) return 1.18;
+    if (iw < 900) return 1.35;
+    return 1.5;
+  }
+
   /* ---- Render pages ---- */
   function renderAll() {
     var area  = $('pages-area');
     area.innerHTML = '';
-    var SCALE = 1.5;
+    var SCALE = getViewerScale();
     var dpr   = window.devicePixelRatio || 1;
     var chain = Promise.resolve();
 
@@ -612,7 +701,7 @@
               el.dataset.orig    = item.str;
               /* Min overlay width */
               el.dataset.ow      = String(Math.ceil((item.width || 0) * viewport.scale) + 6);
-              /* Axis-aligned rect (viewport px) covering raster text on canvas ï¿½ used to paint white */
+              /* Axis-aligned rect (viewport px) covering raster text on canvas  used to paint white */
               var pad      = 4;
               var textRunW = item.width || (item.str.length * fontSize * 0.55);
               var bw       = textRunW + pad * 2 + 10;
@@ -655,7 +744,10 @@
 
             wrap.appendChild(canvas);
             wrap.appendChild(layer);
-            area.appendChild(wrap);
+            var scroll = document.createElement('div');
+            scroll.className = 'page-scroll';
+            scroll.appendChild(wrap);
+            area.appendChild(scroll);
           });
         });
       })(pn);
@@ -670,7 +762,7 @@
     var canvas = wrap.querySelector('canvas.page-canvas');
     if (!canvas) return;
     var dpr   = window.devicePixelRatio || 1;
-    var SCALE = 1.5;
+    var SCALE = getViewerScale();
     pdfJsDoc.getPage(pageNum).then(function(page) {
       var viewport = page.getViewport({ scale: SCALE });
       canvas.width  = Math.floor(viewport.width * dpr);
@@ -744,8 +836,8 @@
   }
 
   /*
-   * Export raster: single high-res pass (no extra supersample layer ï¿½ that caused soft rescaling).
-   * Aim for longest edge ~= MAX_CANVAS px so typical pages land near ~300ï¿½450 DPI visually.
+   * Export raster: single high-res pass (no extra supersample layer  that caused soft rescaling).
+   * Aim for longest edge ~= MAX_CANVAS px so typical pages land near ~300450 DPI visually.
    */
   function getExportViewport(page) {
     var base = page.getViewport({ scale: 1 });
@@ -766,7 +858,7 @@
     };
   }
 
-  /* PDF.js getTextContent() usually has no fill colour ï¿½ try anyway, then sample canvas. */
+  /* PDF.js getTextContent() usually has no fill colour  try anyway, then sample canvas. */
   function cssColorFromPdfItem(item) {
     if (!item || typeof item !== 'object') return null;
     var arr = item.fillColor || item.color || item.strokeColor;
