@@ -273,20 +273,19 @@
       background: #0f172a; display: flex; flex-direction: column;
       align-items: stretch; gap: 1.75rem;
     }
-    /* Horizontal pan for wide PDF pages on narrow screens */
+    /* Page scroll wrapper ù no horizontal overflow needed once scale fits width */
     .page-scroll {
       width: 100%;
       max-width: 100%;
-      overflow-x: auto;
+      overflow-x: hidden;
       overflow-y: visible;
-      -webkit-overflow-scrolling: touch;
       display: flex;
       justify-content: center;
-      scrollbar-gutter: stable;
     }
     .page-scroll .page-wrapper {
       flex-shrink: 0;
     }
+    .page-canvas { display: block; }
     .page-label {
       font-size: 0.78rem; color: #475569; text-align: center;
       margin-bottom: -2rem; font-weight: 500; letter-spacing: 0.05em;
@@ -309,6 +308,11 @@
       color: transparent; outline: none; background: transparent;
       transition: border-color 0.15s, background 0.15s, color 0.15s;
       caret-color: #6366f1; min-width: 4px;
+      /* allow tap on mobile without fighting scroll */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(99,102,241,0.15);
+      /* prevent iOS from zooming into the field on focus */
+      font-size: inherit;
     }
     .tx:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); color: rgba(0,0,0,0.55); }
     .tx:focus { border-color: #6366f1; background: rgba(255,255,255,0.97); color: #111; z-index: 20; box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
@@ -414,7 +418,10 @@
       .pages-area {
         gap: 1.25rem;
         padding-top: 1rem;
+        padding-left: 0;
+        padding-right: 0;
       }
+      .page-scroll { border-radius: 0; }
       .page-label { font-size: 0.7rem; margin-bottom: -1rem; }
     }
 
@@ -427,7 +434,12 @@
     }
 
     @media (hover: none) and (pointer: coarse) {
-      .tx { min-height: 1.25em; }
+      /* Bigger tap target on touch screens */
+      .tx { min-height: 1.6em; min-width: 1em; padding: 3px 4px; }
+      /* Show a faint border on ALL text fields so users can see where to tap.
+         On desktop these stay invisible until hovered; on touch there's no hover. */
+      .tx { border-color: rgba(99,102,241,0.25) !important; background: rgba(99,102,241,0.04) !important; }
+      .tx:focus { border-color: #6366f1 !important; background: rgba(255,255,255,0.97) !important; color: #111 !important; }
     }
   </style>
 </head>
@@ -439,10 +451,6 @@
     <div class="brand-icon">&#128196;</div>
     <h1 class="brand-name">Jack pdf Editor</h1>
   </div>
-  <p class="seo-intro">
-    <strong>PDF edit</strong> online for free: change text in your PDF, rename the file, and download.
-    Jack pdf Editor runs in your browser at <strong>pdf.pravoo.in</strong> &mdash; a simple way to <strong>edit PDF</strong> documents without installing software.
-  </p>
   <p class="upload-sub">Drag &amp; drop a PDF anywhere below, or choose a file &mdash; then click text to edit and save</p>
   <div class="drop-zone" id="drop-zone">
     <div class="drop-icon">&#128196;</div>
@@ -462,12 +470,6 @@
         How do I edit a PDF online for free? <span class="faq-arrow">&#9660;</span>
       </button>
       <div class="faq-a">Go to pdf.pravoo.in, upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Press Enter to confirm, then click Save &amp; Download.</div>
-    </div>
-    <div class="faq-item">
-      <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
-        Can I edit PDF text without installing software? <span class="faq-arrow">&#9660;</span>
-      </button>
-      <div class="faq-a">Yes. Jack pdf Editor runs entirely in your browser at pdf.pravoo.in &#8212; no download, no install, and no signup required.</div>
     </div>
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
@@ -636,8 +638,18 @@
     });
   }
 
-  function getViewerScale() {
-    var iw = typeof window !== 'undefined' ? window.innerWidth : 800;
+  function getViewerScale(pdfPageWidthPt) {
+    /* Available width = screen minus padding (2 ù 8px) */
+    var available = (window.innerWidth || 375) - 16;
+    /* pdfPageWidthPt: width of the PDF page at scale=1 (in PDF user units, ~px at 72dpi)
+       If not provided yet (e.g. for redraw), fall back to a safe screen-fit scale */
+    if (pdfPageWidthPt && pdfPageWidthPt > 0) {
+      var fit = available / pdfPageWidthPt;
+      /* On desktop never exceed 1.5; on mobile fit-to-width exactly */
+      return window.innerWidth >= 1024 ? Math.min(fit, 1.5) : fit;
+    }
+    /* Fallback (used by redrawPageCanvasOnly before page is known) */
+    var iw = window.innerWidth || 375;
     if (iw < 400) return 1.05;
     if (iw < 640) return 1.18;
     if (iw < 900) return 1.35;
@@ -648,7 +660,6 @@
   function renderAll() {
     var area  = $('pages-area');
     area.innerHTML = '';
-    var SCALE = getViewerScale();
     var dpr   = window.devicePixelRatio || 1;
     var chain = Promise.resolve();
 
@@ -658,6 +669,9 @@
           showLoading('Rendering page ' + pageNum + ' / ' + pdfJsDoc.numPages + '...');
           return pdfJsDoc.getPage(pageNum);
         }).then(function(page) {
+          /* Fit page to available width ù pass the 72dpi base width for accurate scale */
+          var baseVp = page.getViewport({ scale: 1 });
+          var SCALE  = getViewerScale(baseVp.width);
           var viewport = page.getViewport({ scale: SCALE });
 
           var lbl = document.createElement('p');
@@ -724,11 +738,24 @@
                 el.style.transformOrigin = '0 100%';
               }
 
-              function wipeCanvasBehind() { eraseCanvasUnderTx(el); }
+              el.addEventListener('input', function() {
+                /* Only erase canvas once the user actually starts typing */
+                eraseCanvasUnderTx(el);
+              });
 
-              el.addEventListener('focus', wipeCanvasBehind);
-              el.addEventListener('input', wipeCanvasBehind);
-              el.addEventListener('blur', function() { commitEdit(el); });
+              el.addEventListener('blur', function() {
+                var changed = el.textContent !== el.dataset.orig;
+                if (changed) {
+                  eraseCanvasUnderTx(el);
+                  commitEdit(el);
+                } else {
+                  /* Nothing typed: restore canvas so original text never disappears */
+                  el.classList.remove('modified');
+                  el.style.minWidth = '';
+                  redrawPageCanvasOnly(pageNum);
+                }
+              });
+
               el.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
                 if (e.key === 'Escape') {
@@ -762,8 +789,9 @@
     var canvas = wrap.querySelector('canvas.page-canvas');
     if (!canvas) return;
     var dpr   = window.devicePixelRatio || 1;
-    var SCALE = getViewerScale();
     pdfJsDoc.getPage(pageNum).then(function(page) {
+      var baseVp = page.getViewport({ scale: 1 });
+      var SCALE  = getViewerScale(baseVp.width);
       var viewport = page.getViewport({ scale: SCALE });
       canvas.width  = Math.floor(viewport.width * dpr);
       canvas.height = Math.floor(viewport.height * dpr);
