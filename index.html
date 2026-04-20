@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Editor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #0f172a;
+      min-height: 100vh;
+      color: #e2e8f0;
+      overflow-x: hidden;
+    }
+
+    /* Upload screen */
+    #upload-screen {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; padding: 2rem;
+      background: radial-gradient(ellipse at 50% 0%, #1e1b4b 0%, #0f172a 70%);
+      transition: background 0.2s ease;
+    }
+    #upload-screen.drop-target-active {
+      background: radial-gradient(ellipse at 50% 0%, #312e81 0%, #0f172a 75%);
+    }
+    .brand { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    .brand-icon {
+      width: 52px; height: 52px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 14px; display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem; box-shadow: 0 8px 24px rgba(99,102,241,0.4);
+    }
+    .brand-name {
+      font-size: 2rem; font-weight: 800;
+      background: linear-gradient(135deg, #a5b4fc, #e879f9);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .upload-sub { color: #94a3b8; font-size: 1rem; margin-bottom: 2.5rem; text-align: center; }
+    .drop-zone {
+      width: 100%; max-width: 540px;
+      border: 2px dashed #334155; border-radius: 20px;
+      padding: 3.5rem 2rem; text-align: center; cursor: pointer;
+      transition: all 0.25s ease; background: rgba(255,255,255,0.02);
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: #6366f1; background: rgba(99,102,241,0.06);
+      transform: translateY(-3px); box-shadow: 0 12px 40px rgba(99,102,241,0.15);
+    }
+    .drop-icon { font-size: 3.5rem; margin-bottom: 1rem; }
+    .drop-title { font-size: 1.15rem; font-weight: 600; color: #e2e8f0; margin-bottom: 0.4rem; }
+    .drop-hint  { font-size: 0.88rem; color: #64748b; }
+    .upload-btn {
+      display: inline-block; margin-top: 1.5rem; padding: 0.65rem 2rem;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white; border: none; border-radius: 10px;
+      font-size: 0.95rem; font-weight: 600; cursor: pointer;
+      box-shadow: 0 4px 16px rgba(99,102,241,0.35); transition: all 0.2s ease;
+    }
+    .upload-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.45); }
+
+    /* Editor screen */
+    #editor-screen { display: none; flex-direction: column; min-height: 100vh; }
+
+    .toolbar {
+      position: sticky; top: 0; z-index: 200;
+      background: #1e293b; border-bottom: 1px solid #334155;
+      padding: 0.7rem 1.25rem;
+      display: flex; align-items: center; gap: 0.75rem;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+    .toolbar-spacer { flex: 1; }
+    .filename-wrap {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: rgba(255,255,255,0.06); border: 1px solid transparent;
+      border-radius: 8px; padding: 0.3rem 0.6rem; cursor: text; transition: all 0.2s;
+    }
+    .filename-wrap:hover { border-color: #475569; background: rgba(255,255,255,0.09); }
+    .filename-wrap:focus-within { border-color: #6366f1; background: rgba(99,102,241,0.1); }
+    .filename-input {
+      background: transparent; border: none; outline: none;
+      color: #e2e8f0; font-size: 0.88rem; font-weight: 500;
+      width: 220px; max-width: 40vw;
+    }
+    .edit-badge {
+      font-size: 0.78rem; background: rgba(99,102,241,0.2);
+      color: #a5b4fc; border-radius: 20px; padding: 0.2rem 0.65rem;
+      font-weight: 600; display: none;
+    }
+    .tbtn {
+      padding: 0.45rem 1rem; border: none; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      transition: all 0.18s ease; display: flex; align-items: center; gap: 0.35rem;
+      white-space: nowrap;
+    }
+    .tbtn-ghost { background: rgba(255,255,255,0.07); color: #cbd5e1; }
+    .tbtn-ghost:hover { background: rgba(255,255,255,0.12); }
+    .tbtn-save {
+      background: linear-gradient(135deg,#6366f1,#8b5cf6); color: white;
+      box-shadow: 0 3px 10px rgba(99,102,241,0.3);
+    }
+    .tbtn-save:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(99,102,241,0.4); }
+    .tbtn-dl {
+      background: linear-gradient(135deg,#10b981,#059669); color: white;
+      box-shadow: 0 3px 10px rgba(16,185,129,0.3);
+    }
+    .tbtn-dl:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.4); }
+    .tbtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+    .hint-bar {
+      background: rgba(99,102,241,0.08); border-bottom: 1px solid rgba(99,102,241,0.15);
+      padding: 0.45rem 1.25rem; font-size: 0.8rem; color: #94a3b8;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+    .hint-dot { width: 6px; height: 6px; border-radius: 50%; background: #6366f1; flex-shrink: 0; }
+
+    .pages-area {
+      flex: 1; overflow-y: auto; overflow-x: hidden; padding: 2rem 1rem;
+      background: #0f172a; display: flex; flex-direction: column;
+      align-items: center; gap: 2.5rem;
+    }
+    .page-label {
+      font-size: 0.78rem; color: #475569; text-align: center;
+      margin-bottom: -2rem; font-weight: 500; letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .page-wrapper {
+      position: relative; border-radius: 4px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+      overflow: hidden;
+    }
+    .page-canvas { display: block; }
+
+    /* Text overlay */
+    .text-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    .tx {
+      position: absolute; pointer-events: all; cursor: text;
+      border: 1px solid transparent; border-radius: 2px;
+      padding: 1px 2px; white-space: pre; line-height: 1;
+      color: transparent; outline: none; background: transparent;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      caret-color: #6366f1; min-width: 4px;
+    }
+    .tx:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); color: rgba(0,0,0,0.55); }
+    .tx:focus { border-color: #6366f1; background: rgba(255,255,255,0.97); color: #111; z-index: 20; box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
+    .tx.modified { background: white !important; color: #111 !important; border: 1.5px solid #10b981 !important; }
+    .tx.modified:hover, .tx.modified:focus { background: rgba(255,255,255,0.98) !important; color: #111 !important; }
+
+    /* Loading overlay */
+    #loading {
+      position: fixed; inset: 0; z-index: 1000;
+      background: rgba(15,23,42,0.85); backdrop-filter: blur(4px);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1rem;
+    }
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid rgba(99,102,241,0.2);
+      border-top-color: #6366f1; border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-msg { color: #94a3b8; font-size: 0.95rem; }
+
+    /* Toast */
+    #toast {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 2000;
+      padding: 0.75rem 1.4rem; border-radius: 10px; max-width: 360px;
+      font-size: 0.88rem; font-weight: 500; color: white;
+      transform: translateY(80px); opacity: 0;
+      transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none; box-shadow: 0 8px 24px rgba(0,0,0,0.35); line-height: 1.4;
+    }
+    #toast.show  { transform: translateY(0); opacity: 1; }
+    #toast.success { background: #10b981; }
+    #toast.error   { background: #ef4444; }
+    #toast.info    { background: #6366f1; }
+  </style>
+</head>
+<body>
+
+<!-- Upload Screen -->
+<div id="upload-screen">
+  <div class="brand">
+    <div class="brand-icon">&#128196;</div>
+    <span class="brand-name">PDF Editor</span>
+  </div>
+  <p class="upload-sub">Drag &amp; drop a PDF anywhere below, or choose a file &mdash; then click text to edit and save</p>
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">&#128196;</div>
+    <p class="drop-title">Drop your PDF here</p>
+    <p class="drop-hint">or click the button below to browse &mdash; you can also drop on this whole area</p>
+    <label for="file-input" class="upload-btn">Choose PDF File</label>
+  </div>
+  <input type="file" id="file-input" accept=".pdf" style="display:none" />
+</div>
+
+<!-- Editor Screen -->
+<div id="editor-screen">
+  <div class="toolbar">
+    <button class="tbtn tbtn-dl" id="btn-dl" onclick="downloadPdf()" disabled>&#8595; Download</button>
+    <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" style="display:none">&#128190; Save &amp; Download</button>
+    <div class="toolbar-spacer"></div>
+    <span class="edit-badge" id="edit-badge"></span>
+    <div class="filename-wrap">
+      <input type="text" id="file-name" class="filename-input" value="document.pdf" spellcheck="false" />
+    </div>
+  </div>
+  <div class="hint-bar">
+    <span class="hint-dot"></span>
+    Click any text to edit &nbsp;&mdash;&nbsp; Press <strong>Enter</strong> to confirm &nbsp;&mdash;&nbsp;
+    Use <strong>Save &amp; Download</strong> to export with your changes
+  </div>
+  <div class="pages-area" id="pages-area"></div>
+</div>
+
+<!-- Loading -->
+<div id="loading">
+  <div class="spinner"></div>
+  <p class="loading-msg" id="loading-msg">Loading...</p>
+</div>
+<div id="toast"></div>
+
+<script>
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+  var pdfJsDoc      = null;
+  var originalBytes = null;
+  var savedBytes    = null;
+  var edits         = new Map(); // pageIndex(0-based) -> Map(itemIndex -> newText)
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---- Loading / Toast ---- */
+  function showLoading(msg) {
+    $('loading-msg').textContent = msg || 'Processing...';
+    $('loading').style.display = 'flex';
+  }
+  function hideLoading() { $('loading').style.display = 'none'; }
+
+  var toastTimer;
+  function toast(msg, type) {
+    var el = $('toast');
+    el.textContent = msg;
+    el.className = 'toast ' + (type || 'info') + ' show';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() { el.classList.remove('show'); }, 4000);
+  }
+
+  function updateBadge() {
+    var total = 0;
+    edits.forEach(function(m) { total += m.size; });
+    var badge = $('edit-badge');
+    badge.style.display = total > 0 ? 'inline-block' : 'none';
+    badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
+    $('btn-save-dl').style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+
+  /* ---- Upload ---- */
+  var dropZone     = $('drop-zone');
+  var fileInput    = $('file-input');
+  var uploadScreen = $('upload-screen');
+
+  function isPdfFile(file) {
+    if (!file || !file.name) return false;
+    var t = (file.type || '').toLowerCase();
+    if (t === 'application/pdf' || t === 'application/x-pdf') return true;
+    return /\.pdf$/i.test(file.name);
+  }
+
+  function findPdfInList(fileList) {
+    if (!fileList || !fileList.length) return null;
+    for (var i = 0; i < fileList.length; i++) {
+      if (isPdfFile(fileList[i])) return fileList[i];
+    }
+    return null;
+  }
+
+  function clearDropHighlight() {
+    dropZone.classList.remove('drag-over');
+    uploadScreen.classList.remove('drop-target-active');
+  }
+
+  /* Whole upload screen accepts drag & drop (not only the inner dashed box) */
+  uploadScreen.addEventListener('dragenter', function(e) {
+    e.preventDefault();
+    uploadScreen.classList.add('drop-target-active');
+    dropZone.classList.add('drag-over');
+  });
+  uploadScreen.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    uploadScreen.classList.add('drop-target-active');
+    dropZone.classList.add('drag-over');
+  });
+  uploadScreen.addEventListener('dragleave', function(e) {
+    if (!uploadScreen.contains(e.relatedTarget)) clearDropHighlight();
+  });
+  uploadScreen.addEventListener('drop', function(e) {
+    e.preventDefault();
+    clearDropHighlight();
+    var f = findPdfInList(e.dataTransfer.files);
+    if (f) loadFile(f);
+    else toast('Please drop a PDF file (.pdf)', 'error');
+  });
+
+  fileInput.addEventListener('change', function(e) {
+    var f = e.target.files && e.target.files[0];
+    if (f && isPdfFile(f)) loadFile(f);
+    else if (f) toast('Please choose a PDF file (.pdf)', 'error');
+  });
+
+  /* ---- Load PDF ---- */
+  function loadFile(file) {
+    showLoading('Loading PDF...');
+    file.arrayBuffer().then(function(buf) {
+      originalBytes = new Uint8Array(buf.slice(0));
+      savedBytes    = null;
+      edits         = new Map();
+
+      $('file-name').value          = file.name;
+      $('btn-dl').disabled          = false;
+      $('edit-badge').style.display = 'none';
+      $('btn-save-dl').style.display = 'none';
+
+      return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
+    }).then(function(doc) {
+      pdfJsDoc = doc;
+      $('upload-screen').style.display = 'none';
+      $('editor-screen').style.display = 'flex';
+      return renderAll();
+    }).then(function() {
+      hideLoading();
+      toast('Loaded ' + pdfJsDoc.numPages + ' page(s). Click any text to edit.', 'success');
+    }).catch(function(err) {
+      hideLoading();
+      toast('Error loading PDF: ' + err.message, 'error');
+      console.error('loadFile error:', err);
+    });
+  }
+
+  /* ---- Render pages ---- */
+  function renderAll() {
+    var area  = $('pages-area');
+    area.innerHTML = '';
+    var SCALE = 1.5;
+    var dpr   = window.devicePixelRatio || 1;
+    var chain = Promise.resolve();
+
+    for (var pn = 1; pn <= pdfJsDoc.numPages; pn++) {
+      (function(pageNum) {
+        chain = chain.then(function() {
+          showLoading('Rendering page ' + pageNum + ' / ' + pdfJsDoc.numPages + '...');
+          return pdfJsDoc.getPage(pageNum);
+        }).then(function(page) {
+          var viewport = page.getViewport({ scale: SCALE });
+
+          var lbl = document.createElement('p');
+          lbl.className   = 'page-label';
+          lbl.textContent = 'Page ' + pageNum + ' of ' + pdfJsDoc.numPages;
+          area.appendChild(lbl);
+
+          var wrap = document.createElement('div');
+          wrap.className    = 'page-wrapper';
+          wrap.dataset.pageNum = String(pageNum);
+          wrap.style.width  = viewport.width  + 'px';
+          wrap.style.height = viewport.height + 'px';
+
+          var canvas = document.createElement('canvas');
+          canvas.className    = 'page-canvas';
+          canvas.width        = Math.floor(viewport.width  * dpr);
+          canvas.height       = Math.floor(viewport.height * dpr);
+          canvas.style.width  = viewport.width  + 'px';
+          canvas.style.height = viewport.height + 'px';
+          var ctx = canvas.getContext('2d');
+          ctx.scale(dpr, dpr);
+
+          return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
+            return page.getTextContent();
+          }).then(function(textContent) {
+            var layer = document.createElement('div');
+            layer.className = 'text-layer';
+
+            textContent.items.forEach(function(item, idx) {
+              if (!item.str) return;
+              var tx       = pdfjsLib.Util.transform(viewport.transform, item.transform);
+              var fontSize = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
+              if (fontSize < 1) return;
+
+              var el = document.createElement('div');
+              el.className       = 'tx';
+              el.contentEditable = 'true';
+              el.textContent     = item.str;
+              el.dataset.pi      = String(pageNum - 1);
+              el.dataset.ii      = String(idx);
+              el.dataset.orig    = item.str;
+              /* Min overlay width */
+              el.dataset.ow      = String(Math.ceil((item.width || 0) * viewport.scale) + 6);
+              /* Axis-aligned rect (viewport px) covering raster text on canvas ù used to paint white */
+              var pad      = 4;
+              var textRunW = item.width || (item.str.length * fontSize * 0.55);
+              var bw       = textRunW + pad * 2 + 10;
+              var bh       = fontSize + pad * 2 + 8;
+              el.dataset.eraseLeft = String(tx[4] - pad);
+              el.dataset.eraseTop  = String(tx[5] - fontSize - pad);
+              el.dataset.eraseW    = String(Math.ceil(bw));
+              el.dataset.eraseH    = String(Math.ceil(bh));
+
+              el.style.left       = tx[4] + 'px';
+              el.style.top        = (tx[5] - fontSize) + 'px';
+              el.style.fontSize   = fontSize + 'px';
+              el.style.fontFamily = mapFamily(item.fontName || '');
+              el.style.fontWeight = isBold(item.fontName || '')   ? 'bold'   : 'normal';
+              el.style.fontStyle  = isItalic(item.fontName || '') ? 'italic' : 'normal';
+
+              var angle = Math.atan2(tx[1], tx[0]);
+              if (Math.abs(angle) > 0.01) {
+                el.style.transform       = 'rotate(' + angle + 'rad)';
+                el.style.transformOrigin = '0 100%';
+              }
+
+              function wipeCanvasBehind() { eraseCanvasUnderTx(el); }
+
+              el.addEventListener('focus', wipeCanvasBehind);
+              el.addEventListener('input', wipeCanvasBehind);
+              el.addEventListener('blur', function() { commitEdit(el); });
+              el.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  el.textContent = el.dataset.orig;
+                  el.blur();
+                  redrawPageCanvasOnly(pageNum);
+                }
+              });
+
+              layer.appendChild(el);
+            });
+
+            wrap.appendChild(canvas);
+            wrap.appendChild(layer);
+            area.appendChild(wrap);
+          });
+        });
+      })(pn);
+    }
+    return chain;
+  }
+
+  /* Redraw one page raster from PDF (after Esc revert), then re-erase spots for edits still applied */
+  function redrawPageCanvasOnly(pageNum) {
+    var wrap = document.querySelector('.page-wrapper[data-page-num="' + pageNum + '"]');
+    if (!wrap || !pdfJsDoc) return;
+    var canvas = wrap.querySelector('canvas.page-canvas');
+    if (!canvas) return;
+    var dpr   = window.devicePixelRatio || 1;
+    var SCALE = 1.5;
+    pdfJsDoc.getPage(pageNum).then(function(page) {
+      var viewport = page.getViewport({ scale: SCALE });
+      canvas.width  = Math.floor(viewport.width * dpr);
+      canvas.height = Math.floor(viewport.height * dpr);
+      canvas.style.width  = viewport.width + 'px';
+      canvas.style.height = viewport.height + 'px';
+      var ctx = canvas.getContext('2d');
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(dpr, dpr);
+      return page.render({ canvasContext: ctx, viewport: viewport }).promise;
+    }).then(function() {
+      var pi = pageNum - 1;
+      var map = edits.get(pi);
+      if (!map || map.size === 0) return;
+      wrap.querySelectorAll('.tx').forEach(function(txEl) {
+        if (parseInt(txEl.dataset.pi, 10) !== pi) return;
+        var ii = parseInt(txEl.dataset.ii, 10);
+        if (map.has(ii)) eraseCanvasUnderTx(txEl);
+      });
+    }).catch(function(err) { console.error('redrawPageCanvasOnly:', err); });
+  }
+
+  /* Paint white on the page canvas so old raster PDF text disappears while editing */
+  function eraseCanvasUnderTx(el) {
+    var wrap = el.closest('.page-wrapper');
+    if (!wrap) return;
+    var canvas = wrap.querySelector('canvas.page-canvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var pad = 5;
+    var wr = wrap.getBoundingClientRect();
+    var er = el.getBoundingClientRect();
+    var ax = parseFloat(el.dataset.eraseLeft);
+    var ay = parseFloat(el.dataset.eraseTop);
+    var aw = parseFloat(el.dataset.eraseW);
+    var ah = parseFloat(el.dataset.eraseH);
+    var ex = er.left - wr.left - pad;
+    var ey = er.top - wr.top - pad;
+    var ew = er.width + pad * 2;
+    var eh = er.height + pad * 2;
+    var x  = isNaN(ax) ? ex : Math.min(ax, ex);
+    var y  = isNaN(ay) ? ey : Math.min(ay, ey);
+    var rx = isNaN(ax) ? ex + ew : Math.max(ax + aw, ex + ew);
+    var by = isNaN(ay) ? ey + eh : Math.max(ay + ah, ey + eh);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x, y, rx - x, by - y);
+  }
+
+  /* ---- Commit edit ---- */
+  function commitEdit(el) {
+    eraseCanvasUnderTx(el);
+    var pi  = parseInt(el.dataset.pi, 10);
+    var ii  = parseInt(el.dataset.ii, 10);
+    var val = el.textContent;
+    if (!edits.has(pi)) edits.set(pi, new Map());
+    if (val !== el.dataset.orig) {
+      edits.get(pi).set(ii, val);
+      el.classList.add('modified');
+      el.style.minWidth = el.dataset.ow + 'px';
+    } else {
+      edits.get(pi).delete(ii);
+      el.classList.remove('modified');
+      el.style.minWidth = '';
+    }
+    updateBadge();
+  }
+
+  function flushActiveEdit() {
+    var active = document.activeElement;
+    if (active && active.classList.contains('tx')) { active.blur(); }
+  }
+
+  /*
+   * Export raster: single high-res pass (no extra supersample layer ù that caused soft rescaling).
+   * Aim for longest edge ~= MAX_CANVAS px so typical pages land near ~300ù450 DPI visually.
+   */
+  function getExportViewport(page) {
+    var base = page.getViewport({ scale: 1 });
+    var MAX_CANVAS = 8192;
+    var scale      = MAX_CANVAS / Math.max(base.width, base.height);
+    if (!isFinite(scale) || scale <= 0) scale = 8;
+    scale = Math.min(scale, 40);
+    var vp = page.getViewport({ scale: scale });
+    var le = Math.max(vp.width, vp.height);
+    if (le > MAX_CANVAS) {
+      scale *= MAX_CANVAS / le;
+      vp = page.getViewport({ scale: scale });
+    }
+    return {
+      viewport: vp,
+      widthPt: base.width,
+      heightPt: base.height
+    };
+  }
+
+  /* PDF.js getTextContent() usually has no fill colour ù try anyway, then sample canvas. */
+  function cssColorFromPdfItem(item) {
+    if (!item || typeof item !== 'object') return null;
+    var arr = item.fillColor || item.color || item.strokeColor;
+    if (!arr || arr.length < 3) return null;
+    var r = +arr[0], g = +arr[1], b = +arr[2];
+    if (r <= 1 && g <= 1 && b <= 1 && r >= 0 && g >= 0 && b >= 0) {
+      r = Math.round(r * 255); g = Math.round(g * 255); b = Math.round(b * 255);
+    } else {
+      r = Math.round(r); g = Math.round(g); b = Math.round(b);
+    }
+    if (r < 0 || r > 255 || g < 0 || g > 255 || b < 0 || b > 255) return null;
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+
+  function luminance(r, g, b) {
+    return 0.299 * r + 0.587 * g + 0.114 * b;
+  }
+
+  function medianChannel(vals) {
+    vals.sort(function(a, b) { return a - b; });
+    var m = Math.floor(vals.length / 2);
+    return vals.length % 2 ? vals[m] : Math.round((vals[m - 1] + vals[m]) / 2);
+  }
+
+  /*
+   * Match ink RGB from the raster: avoid averaging anti-aliased edges (pulls toward grey).
+   * Use x-height band + median RGB of darkest ~10% pixels (glyph cores ? solid fill).
+   */
+  function sampleInkColorPrecise(ctx, sx, sy, sw, sh) {
+    var canvas = ctx.canvas;
+    var cw = canvas.width;
+    var ch = canvas.height;
+    sx = Math.max(0, Math.floor(sx));
+    sy = Math.max(0, Math.floor(sy));
+    sw = Math.min(Math.max(1, Math.floor(sw)), cw - sx);
+    sh = Math.min(Math.max(1, Math.floor(sh)), ch - sy);
+
+    function pull(img) {
+      if (!img || !img.data || img.data.length < 16) return null;
+      var d = img.data;
+      var pix = [];
+      var i, r, g, b, a, L;
+      for (i = 0; i < d.length; i += 4) {
+        r = d[i]; g = d[i + 1]; b = d[i + 2]; a = d[i + 3];
+        if (a < 130) continue;
+        L = luminance(r, g, b);
+        if (L > 249) continue;
+        if (L < 2) continue;
+        pix.push({ r: r, g: g, b: b, lum: L });
+      }
+      if (pix.length < 6) return null;
+      pix.sort(function(u, v) { return u.lum - v.lum; });
+      var k = Math.max(14, Math.ceil(pix.length * 0.10));
+      k = Math.min(k, pix.length);
+      var core = pix.slice(0, k);
+      return 'rgb(' +
+        medianChannel(core.map(function(p) { return p.r; })) + ',' +
+        medianChannel(core.map(function(p) { return p.g; })) + ',' +
+        medianChannel(core.map(function(p) { return p.b; })) + ')';
+    }
+
+    function region(rx, ry, rw, rh) {
+      rx = Math.max(0, Math.floor(rx));
+      ry = Math.max(0, Math.floor(ry));
+      rw = Math.min(Math.max(1, Math.floor(rw)), cw - rx);
+      rh = Math.min(Math.max(1, Math.floor(rh)), ch - ry);
+      try {
+        return ctx.getImageData(rx, ry, rw, rh);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    /* Body of glyphs (numbers/letters): middle vertical band skips most fringe pixels */
+    var bandSy = sy + Math.floor(sh * 0.28);
+    var bandSh = Math.max(2, Math.floor(sh * 0.42));
+    var rgb = pull(region(sx, bandSy, sw, bandSh));
+    if (rgb) return rgb;
+
+    rgb = pull(region(sx, sy, sw, sh));
+    return rgb || '#000000';
+  }
+
+  /*
+   * Replace PDF text on export canvas: sample ink colour from rendered glyphs, wipe, then draw new text in that colour.
+   */
+  function paintExportTextReplacement(ctx, viewport, item, newText) {
+    var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+    var fs = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
+    if (fs < 0.5) return;
+
+    var angle = Math.atan2(tx[1], tx[0]);
+    var fontPx = Math.max(1, Math.round(fs));
+    ctx.font = fontPx + 'px Arial, Helvetica, sans-serif';
+    ctx.textBaseline = 'alphabetic';
+
+    var sOld = item.str || '';
+    var sNew = newText ? String(newText).trim() : '';
+
+    var wOld = ctx.measureText(sOld).width;
+    var wNew = sNew ? ctx.measureText(sNew).width : 0;
+    var wPdf = 0;
+    if (typeof item.width === 'number' && item.width > 0) {
+      wPdf = Math.hypot(tx[0] * item.width, tx[1] * item.width);
+    }
+    var glyphGuess = Math.max(sOld.length, sNew.length || 1, 3) * fs * 0.62;
+
+    var padX = Math.max(fs * 0.5, 10);
+    var padY = Math.max(fs * 0.35, 6);
+    var boxW = Math.max(wOld, wNew, wPdf, glyphGuess) * 1.12 + padX * 2;
+    var ascent = fs * 1.2;
+    var descent = fs * 0.5;
+    var boxH = ascent + descent + padY;
+
+    var sx = tx[4] - padX;
+    var sy = tx[5] - ascent - padY * 0.5;
+    var ink = cssColorFromPdfItem(item);
+    if (!ink) {
+      if (Math.abs(angle) < 0.015) {
+        ink = sampleInkColorPrecise(ctx, sx, sy, boxW, boxH);
+      } else {
+        var span = Math.sqrt(boxW * boxW + boxH * boxH) + fs;
+        ink = sampleInkColorPrecise(ctx, tx[4] - span, tx[5] - span, span * 2, span * 2);
+      }
+    }
+
+    ctx.fillStyle = '#ffffff';
+
+    if (Math.abs(angle) < 0.015) {
+      ctx.fillRect(sx, sy, boxW, boxH);
+      if (sNew) {
+        ctx.fillStyle = ink;
+        ctx.fillText(sNew, tx[4], tx[5]);
+      }
+    } else {
+      ctx.save();
+      ctx.translate(tx[4], tx[5]);
+      ctx.rotate(angle);
+      ctx.fillRect(-padX, -ascent - padY * 0.5, boxW, boxH);
+      if (sNew) {
+        ctx.fillStyle = ink;
+        ctx.fillText(sNew, 0, 0);
+      }
+      ctx.restore();
+    }
+  }
+
+  /* ---- Save & Download (canvas-based export) ---- */
+  function saveAndDownload() {
+    flushActiveEdit();
+    setTimeout(function() {
+      var total = 0;
+      edits.forEach(function(m) { total += m.size; });
+      if (total === 0) { toast('Make an edit first.', 'info'); return; }
+
+      showLoading('Exporting...');
+      var outDoc;
+
+      PDFLib.PDFDocument.create().then(function(doc) {
+        outDoc = doc;
+        var chain = Promise.resolve();
+        for (var pn = 1; pn <= pdfJsDoc.numPages; pn++) {
+          (function(pageNum) {
+            chain = chain.then(function() {
+              showLoading('Exporting page ' + pageNum + ' / ' + pdfJsDoc.numPages + '...');
+              return pdfJsDoc.getPage(pageNum);
+            }).then(function(page) {
+              var ev       = getExportViewport(page);
+              var viewport = ev.viewport;
+              var widthPt  = ev.widthPt;
+              var heightPt = ev.heightPt;
+
+              var canvas = document.createElement('canvas');
+              canvas.width  = Math.round(viewport.width);
+              canvas.height = Math.round(viewport.height);
+              var ctx = canvas.getContext('2d');
+              ctx.imageSmoothingEnabled = true;
+              ctx.imageSmoothingQuality = 'high';
+
+              return page.render({
+                canvasContext: ctx,
+                viewport: viewport
+              }).promise.then(function() {
+                ctx.setTransform(1, 0, 0, 1, 0, 0);
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                var pageEdits = edits.get(pageNum - 1);
+                if (pageEdits && pageEdits.size > 0) {
+                  return page.getTextContent().then(function(textContent) {
+                    pageEdits.forEach(function(newText, itemIdx) {
+                      var item = textContent.items[itemIdx];
+                      if (!item) return;
+                      paintExportTextReplacement(ctx, viewport, item, newText);
+                    });
+                  });
+                }
+              }).then(function() {
+                var dataUrl = canvas.toDataURL('image/png');
+                var b64     = dataUrl.split(',')[1];
+                var bytes   = Uint8Array.from(atob(b64), function(c) { return c.charCodeAt(0); });
+                return outDoc.embedPng(bytes);
+              }).then(function(img) {
+                var oPage = outDoc.addPage([widthPt, heightPt]);
+                oPage.drawImage(img, {
+                  x: 0,
+                  y: 0,
+                  width: widthPt,
+                  height: heightPt
+                });
+              });
+            });
+          })(pn);
+        }
+        return chain;
+      }).then(function() {
+        return outDoc.save();
+      }).then(function(bytes) {
+        savedBytes = bytes;
+        hideLoading();
+        $('btn-save-dl').style.display = 'none';
+        $('edit-badge').style.display  = 'none';
+        edits = new Map();
+        toast('Saved! Downloading...', 'success');
+        setTimeout(downloadPdf, 300);
+      }).catch(function(err) {
+        hideLoading();
+        console.error('saveAndDownload error:', err);
+        toast('Error: ' + (err.message || String(err)), 'error');
+      });
+    }, 80);
+  }
+
+  /* ---- Download ---- */
+  function downloadPdf() {
+    if (!originalBytes) { toast('No PDF loaded.', 'error'); return; }
+    var bytes = savedBytes || originalBytes;
+    var name  = ($('file-name').value || 'document').trim();
+    if (!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
+    var blob = new Blob([bytes], { type: 'application/pdf' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Download started!', 'success');
+  }
+
+  /* ---- Font helpers ---- */
+  function mapFamily(name) {
+    var l = name.toLowerCase();
+    if (l.indexOf('courier') >= 0 || l.indexOf('mono') >= 0) return '"Courier New", Courier, monospace';
+    if (l.indexOf('times') >= 0 || (l.indexOf('serif') >= 0 && l.indexOf('sans') < 0)) return '"Times New Roman", Times, serif';
+    return 'Helvetica, Arial, sans-serif';
+  }
+  function isBold(name)   { return /bold|black|heavy|semibold/i.test(name); }
+  function isItalic(name) { return /italic|oblique/i.test(name); }
+</script>
+</body>
+</html>
