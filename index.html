@@ -303,21 +303,30 @@
     .text-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
     .tx {
       position: absolute; pointer-events: all; cursor: text;
-      border: 1px solid transparent; border-radius: 2px;
-      padding: 1px 2px; white-space: pre; line-height: 1;
-      color: transparent; outline: none; background: transparent;
-      transition: border-color 0.15s, background 0.15s, color 0.15s;
+      /* zero padding so overlay text aligns with PDF canvas text */
+      padding: 0; margin: 0;
+      /* border drawn INWARD with outline (outline doesn't affect layout) */
+      border: none; outline: 2px solid transparent; outline-offset: 2px;
+      border-radius: 2px;
+      white-space: pre; line-height: 1;
+      color: transparent; background: transparent;
+      box-sizing: content-box;
+      transition: outline-color 0.15s, background 0.15s, color 0.15s;
       caret-color: #6366f1; min-width: 4px;
+      /* Remove browser-default contenteditable padding (Firefox, Chrome differ) */
+      -webkit-padding-before: 0; -webkit-padding-after: 0;
+      -webkit-padding-start: 0; -webkit-padding-end: 0;
       /* allow tap on mobile without fighting scroll */
       touch-action: manipulation;
       -webkit-tap-highlight-color: rgba(99,102,241,0.15);
       /* prevent iOS from zooming into the field on focus */
       font-size: inherit;
     }
-    .tx:hover { border-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); color: rgba(0,0,0,0.55); }
-    .tx:focus { border-color: #6366f1; background: rgba(255,255,255,0.97); color: #111; z-index: 20; box-shadow: 0 0 0 3px rgba(99,102,241,0.25); }
-    .tx.modified { background: white !important; color: #111 !important; border: 1.5px solid #10b981 !important; }
-    .tx.modified:hover, .tx.modified:focus { background: rgba(255,255,255,0.98) !important; color: #111 !important; }
+    .tx:hover { outline-color: rgba(99,102,241,0.5); background: rgba(99,102,241,0.08); color: rgba(0,0,0,0.55); }
+    .tx:focus { outline-color: #6366f1; background: rgba(255,255,255,0.97); color: #111; z-index: 20; box-shadow: 0 0 0 3px rgba(99,102,241,0.18); }
+    .tx.modified { background: white !important; color: #111 !important; outline: 2px solid #10b981 !important; }
+    .tx.modified:hover { outline-color: #10b981 !important; background: rgba(255,255,255,0.98) !important; color: #111 !important; }
+    .tx.modified:focus  { outline-color: #6366f1 !important; background: rgba(255,255,255,0.98) !important; color: #111 !important; }
 
     /* Loading overlay */
     #loading {
@@ -849,7 +858,9 @@
     if (val !== el.dataset.orig) {
       edits.get(pi).set(ii, val);
       el.classList.add('modified');
+      /* cover original text width so white bg hides it fully */
       el.style.minWidth = el.dataset.ow + 'px';
+      el.style.marginLeft = '0'; el.style.marginTop = '0';
     } else {
       edits.get(pi).delete(ii);
       el.classList.remove('modified');
