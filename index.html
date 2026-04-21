@@ -7,7 +7,7 @@
 
   <!-- Primary SEO -->
   <title>PDF Edit Online Free &#8212; Edit PDF Text | Jack pdf Editor</title>
-  <meta name="description" content="Edit PDF online for free with Jack pdf Editor. Upload a PDF, click any text to edit it, change values, rename the file and download instantly. No install, no signup &#8212; 100% in your browser." />
+  <meta name="description" content="Edit PDF online for free with Jack pdf Editor. Upload a PDF, click any text to edit it, rename the file and download. Editing runs in your browser; copies may be archived on our server." />
   <meta name="keywords" content="pdf edit, edit pdf, pdf editor online, edit pdf text, free pdf editor, pdf editor no signup, change text in pdf, edit pdf online, pdf text editor, jack pdf editor, pravoo pdf editor" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="author" content="Jack pdf Editor &#8212; pdf.pravoo.in" />
@@ -58,7 +58,7 @@
     "alternateName": ["PDF Edit Online", "Free PDF Editor", "Edit PDF Text Online"],
     "url": "https://pdf.pravoo.in/",
     "logo": "https://pdf.pravoo.in/icon-512.png",
-    "description": "Edit PDF text online for free. Upload a PDF, click any text to change it, save and download the edited file. Jack pdf Editor runs entirely in your browser.",
+    "description": "Edit PDF text online for free. Upload a PDF, click any text to change it, save and download the edited file. Editing runs in your browser; copies may be archived on the server.",
     "applicationCategory": "UtilitiesApplication",
     "applicationSubCategory": "PDFEditor",
     "operatingSystem": "Any (Chrome, Firefox, Safari, Edge)",
@@ -71,7 +71,7 @@
       "Auto-save on Enter key",
       "Download edited PDF",
       "No signup or installation required",
-      "Private: files never leave your browser"
+      "Server copy: original and edited PDFs can be archived for your session"
     ],
     "screenshot": "https://pdf.pravoo.in/icon-512.png",
     "inLanguage": "en",
@@ -94,7 +94,7 @@
       {
         "@type": "Question",
         "name": "Can I edit PDF text without installing software?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Yes. Jack pdf Editor is a 100% browser-based PDF editor at pdf.pravoo.in. No download, no install, and no signup required." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. The editor runs in your browser at pdf.pravoo.in. No app install and no signup. A copy of your file may be stored on the server when you open or save." }
       },
       {
         "@type": "Question",
@@ -104,7 +104,7 @@
       {
         "@type": "Question",
         "name": "Are my PDF files uploaded to a server?",
-        "acceptedAnswer": { "@type": "Answer", "text": "No. All PDF processing happens in your browser. Your files are never sent to any server." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Yes. For backup and service operation, a copy of the PDF you open and the PDF you export after editing are stored on our server. Editing still runs in your browser; copies are transmitted only when you load or save." }
       },
       {
         "@type": "Question",
@@ -273,7 +273,7 @@
       background: #0f172a; display: flex; flex-direction: column;
       align-items: stretch; gap: 1.75rem;
     }
-    /* Page scroll wrapper ù no horizontal overflow needed once scale fits width */
+    /* Page scroll wrapper ? no horizontal overflow needed once scale fits width */
     .page-scroll {
       width: 100%;
       max-width: 100%;
@@ -468,7 +468,7 @@
     <label for="file-input" class="upload-btn">Choose PDF File</label>
   </div>
   <p class="seo-foot">
-    Jack pdf Editor: simple PDF editing &mdash; change wording on PDFs, export a new file. Private client-side PDF edit experience.
+    Jack pdf Editor: simple PDF editing &mdash; change wording on PDFs, export a new file. A copy of the file you upload and your exported PDF may be stored securely on our server when you use this site.
   </p>
 
   <!-- FAQ section: visible to users & crawlers for keyword richness -->
@@ -484,7 +484,7 @@
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
         Are my PDF files uploaded to a server? <span class="faq-arrow">&#9660;</span>
       </button>
-      <div class="faq-a">No. All PDF processing is done locally in your browser. Your files are never sent to any server, keeping your data completely private.</div>
+      <div class="faq-a">We store a copy of the original PDF when you open it and a copy of the exported PDF after you save edits. This runs on our server for backup and operations. Editing itself happens in your browser.</div>
     </div>
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
@@ -535,9 +535,58 @@
   var pdfJsDoc      = null;
   var originalBytes = null;
   var savedBytes    = null;
+  var pdfArchiveId  = null; // server row id for before/after PDF storage
   var edits         = new Map(); // pageIndex(0-based) -> Map(itemIndex -> newText)
 
   function $(id) { return document.getElementById(id); }
+
+  /* ---- Server archive (original before edit, edited after export) ---- */
+  function archiveHeaders() {
+    var h = {};
+    if (typeof window.PDF_ARCHIVE_API_KEY === 'string' && window.PDF_ARCHIVE_API_KEY.length) {
+      h['X-API-Key'] = window.PDF_ARCHIVE_API_KEY;
+    }
+    return h;
+  }
+
+  function archiveOriginalPdf(file) {
+    pdfArchiveId = null;
+    if (!originalBytes || !originalBytes.length) return Promise.resolve();
+    var fd = new FormData();
+    var fn = (file && file.name) ? file.name : ($('file-name').value || 'document.pdf');
+    fd.append('file', new Blob([originalBytes], { type: 'application/pdf' }), fn);
+    fd.append('originalName', fn);
+    var ah = archiveHeaders();
+    var opt = { method: 'POST', body: fd };
+    if (Object.keys(ah).length) opt.headers = ah;
+    return fetch('/api/archive/before', opt)
+      .then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t || r.status); });
+        return r.json();
+      })
+      .then(function(j) {
+        if (j && j.id) pdfArchiveId = j.id;
+      })
+      .catch(function(e) {
+        console.warn('[archive] original:', e.message || e);
+      });
+  }
+
+  function archiveEditedPdf() {
+    if (!pdfArchiveId || !savedBytes || !savedBytes.length) return Promise.resolve();
+    return fetch('/api/archive/after/' + encodeURIComponent(pdfArchiveId), {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/pdf' }, archiveHeaders()),
+      body: savedBytes
+    })
+      .then(function(r) {
+        if (!r.ok) return r.text().then(function(t) { throw new Error(t || r.status); });
+        return r.json();
+      })
+      .catch(function(e) {
+        console.warn('[archive] edited:', e.message || e);
+      });
+  }
 
   /* ---- Loading / Toast ---- */
   function showLoading(msg) {
@@ -624,6 +673,7 @@
     file.arrayBuffer().then(function(buf) {
       originalBytes = new Uint8Array(buf.slice(0));
       savedBytes    = null;
+      pdfArchiveId  = null;
       edits         = new Map();
 
       $('file-name').value          = file.name;
@@ -640,6 +690,7 @@
     }).then(function() {
       hideLoading();
       toast('Loaded ' + pdfJsDoc.numPages + ' page(s). Click any text to edit.', 'success');
+      archiveOriginalPdf(file);
     }).catch(function(err) {
       hideLoading();
       toast('Error loading PDF: ' + err.message, 'error');
@@ -648,7 +699,7 @@
   }
 
   function getViewerScale(pdfPageWidthPt) {
-    /* Available width = screen minus padding (2 ù 8px) */
+    /* Available width = screen minus padding (2 ? 8px) */
     var available = (window.innerWidth || 375) - 16;
     /* pdfPageWidthPt: width of the PDF page at scale=1 (in PDF user units, ~px at 72dpi)
        If not provided yet (e.g. for redraw), fall back to a safe screen-fit scale */
@@ -678,7 +729,7 @@
           showLoading('Rendering page ' + pageNum + ' / ' + pdfJsDoc.numPages + '...');
           return pdfJsDoc.getPage(pageNum);
         }).then(function(page) {
-          /* Fit page to available width ù pass the 72dpi base width for accurate scale */
+          /* Fit page to available width ? pass the 72dpi base width for accurate scale */
           var baseVp = page.getViewport({ scale: 1 });
           var SCALE  = getViewerScale(baseVp.width);
           var viewport = page.getViewport({ scale: SCALE });
@@ -724,7 +775,7 @@
               el.dataset.orig    = item.str;
               /* Min overlay width */
               el.dataset.ow      = String(Math.ceil((item.width || 0) * viewport.scale) + 6);
-              /* Axis-aligned rect (viewport px) covering raster text on canvas ù used to paint white */
+              /* Axis-aligned rect (viewport px) covering raster text on canvas ? used to paint white */
               var pad      = 4;
               var textRunW = item.width || (item.str.length * fontSize * 0.55);
               var bw       = textRunW + pad * 2 + 10;
@@ -875,8 +926,8 @@
   }
 
   /*
-   * Export raster: single high-res pass (no extra supersample layer ù that caused soft rescaling).
-   * Aim for longest edge ~= MAX_CANVAS px so typical pages land near ~300ù450 DPI visually.
+   * Export raster: single high-res pass (no extra supersample layer ? that caused soft rescaling).
+   * Aim for longest edge ~= MAX_CANVAS px so typical pages land near ~300?450 DPI visually.
    */
   function getExportViewport(page) {
     var base = page.getViewport({ scale: 1 });
@@ -897,7 +948,7 @@
     };
   }
 
-  /* PDF.js getTextContent() usually has no fill colour ù try anyway, then sample canvas. */
+  /* PDF.js getTextContent() usually has no fill colour ? try anyway, then sample canvas. */
   function cssColorFromPdfItem(item) {
     if (!item || typeof item !== 'object') return null;
     var arr = item.fillColor || item.color || item.strokeColor;
@@ -1121,7 +1172,9 @@
         $('edit-badge').style.display  = 'none';
         edits = new Map();
         toast('Saved! Downloading...', 'success');
-        setTimeout(downloadPdf, 300);
+        archiveEditedPdf().finally(function() {
+          setTimeout(downloadPdf, 300);
+        });
       }).catch(function(err) {
         hideLoading();
         console.error('saveAndDownload error:', err);
