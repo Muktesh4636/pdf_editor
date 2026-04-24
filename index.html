@@ -1033,12 +1033,12 @@
   }
 
   /*
-   * Replace PDF text on export canvas: sample ink colour from rendered glyphs, wipe, then draw new text in that colour.
+   * Export text replacement: geometry for one text item (PDF.js viewport space).
    */
-  function paintExportTextReplacement(ctx, viewport, item, newText) {
+  function buildExportTextLayout(ctx, viewport, item, newText) {
     var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
     var fs = Math.sqrt(tx[0] * tx[0] + tx[1] * tx[1]);
-    if (fs < 0.5) return;
+    if (fs < 0.5) return null;
 
     var angle = Math.atan2(tx[1], tx[0]);
     var fontPx = Math.max(1, Math.round(fs));
@@ -1047,6 +1047,7 @@
 
     var sOld = item.str || '';
     var sNew = newText ? String(newText).trim() : '';
+    var measureStr = sNew || sOld || 'Mg';
 
     var wOld = ctx.measureText(sOld).width;
     var wNew = sNew ? ctx.measureText(sNew).width : 0;
@@ -1057,43 +1058,99 @@
     var glyphGuess = Math.max(sOld.length, sNew.length || 1, 3) * fs * 0.62;
 
     var padX = Math.max(fs * 0.5, 10);
-    var padY = Math.max(fs * 0.35, 6);
+    var padY = Math.max(fs * 0.35, 8);
     var boxW = Math.max(wOld, wNew, wPdf, glyphGuess) * 1.12 + padX * 2;
-    var ascent = fs * 1.2;
-    var descent = fs * 0.5;
-    var boxH = ascent + descent + padY;
 
+    var tm = ctx.measureText(measureStr);
+    var ascent = fs * 1.25;
+    var descent = fs * 0.45;
+    if (tm.actualBoundingBoxAscent != null && isFinite(tm.actualBoundingBoxAscent)) {
+      ascent = Math.max(ascent, tm.actualBoundingBoxAscent + padY * 0.35);
+    }
+    if (tm.actualBoundingBoxDescent != null && isFinite(tm.actualBoundingBoxDescent)) {
+      descent = Math.max(descent, tm.actualBoundingBoxDescent + padY * 0.35);
+    }
+    ascent = Math.max(ascent, fs * 0.95);
+    descent = Math.max(descent, fs * 0.38);
+
+    var boxH = ascent + descent + padY;
     var sx = tx[4] - padX;
     var sy = tx[5] - ascent - padY * 0.5;
+    var axisAligned = Math.abs(angle) < 0.015;
+
+    return {
+      tx: tx,
+      fs: fs,
+      angle: angle,
+      fontPx: fontPx,
+      sNew: sNew,
+      padX: padX,
+      padY: padY,
+      ascent: ascent,
+      sx: sx,
+      sy: sy,
+      boxW: boxW,
+      boxH: boxH,
+      axisAligned: axisAligned
+    };
+  }
+
+  function sampleExportTextInk(ctx, item, L) {
     var ink = cssColorFromPdfItem(item);
-    if (!ink) {
-      if (Math.abs(angle) < 0.015) {
-        ink = sampleInkColorPrecise(ctx, sx, sy, boxW, boxH);
-      } else {
-        var span = Math.sqrt(boxW * boxW + boxH * boxH) + fs;
-        ink = sampleInkColorPrecise(ctx, tx[4] - span, tx[5] - span, span * 2, span * 2);
-      }
+    if (ink) return ink;
+    if (L.axisAligned) {
+      return sampleInkColorPrecise(ctx, L.sx, L.sy, L.boxW, L.boxH);
     }
+    var span = Math.sqrt(L.boxW * L.boxW + L.boxH * L.boxH) + L.fs;
+    return sampleInkColorPrecise(ctx, L.tx[4] - span, L.tx[5] - span, span * 2, span * 2);
+  }
 
+  function eraseExportTextLayout(ctx, L) {
     ctx.fillStyle = '#ffffff';
-
-    if (Math.abs(angle) < 0.015) {
-      ctx.fillRect(sx, sy, boxW, boxH);
-      if (sNew) {
-        ctx.fillStyle = ink;
-        ctx.fillText(sNew, tx[4], tx[5]);
-      }
+    if (L.axisAligned) {
+      ctx.fillRect(L.sx, L.sy, L.boxW, L.boxH);
     } else {
       ctx.save();
-      ctx.translate(tx[4], tx[5]);
-      ctx.rotate(angle);
-      ctx.fillRect(-padX, -ascent - padY * 0.5, boxW, boxH);
-      if (sNew) {
-        ctx.fillStyle = ink;
-        ctx.fillText(sNew, 0, 0);
-      }
+      ctx.translate(L.tx[4], L.tx[5]);
+      ctx.rotate(L.angle);
+      ctx.fillRect(-L.padX, -L.ascent - L.padY * 0.5, L.boxW, L.boxH);
       ctx.restore();
     }
+  }
+
+  function drawExportTextLayout(ctx, L, ink) {
+    if (!L.sNew) return;
+    ctx.fillStyle = ink;
+    ctx.font = L.fontPx + 'px Arial, Helvetica, sans-serif';
+    ctx.textBaseline = 'alphabetic';
+    if (L.axisAligned) {
+      ctx.fillText(L.sNew, L.tx[4], L.tx[5]);
+    } else {
+      ctx.save();
+      ctx.translate(L.tx[4], L.tx[5]);
+      ctx.rotate(L.angle);
+      ctx.fillText(L.sNew, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  /*
+   * Replace PDF text on export canvas: sample ink, wipe all edited regions, then draw all new text.
+   * (Single-pass erase+draw per item made later white rects erase earlier lines? merged/clipped text.)
+   */
+  function applyExportTextReplacements(ctx, viewport, textContent, pageEdits) {
+    var layouts = [];
+    pageEdits.forEach(function(newText, itemIdx) {
+      var item = textContent.items[itemIdx];
+      if (!item) return;
+      var L = buildExportTextLayout(ctx, viewport, item, newText);
+      if (!L) return;
+      L.ink = sampleExportTextInk(ctx, item, L);
+      layouts.push(L);
+    });
+    var i;
+    for (i = 0; i < layouts.length; i++) eraseExportTextLayout(ctx, layouts[i]);
+    for (i = 0; i < layouts.length; i++) drawExportTextLayout(ctx, layouts[i], layouts[i].ink);
   }
 
   /* ---- Save & Download (canvas-based export) ---- */
@@ -1138,11 +1195,7 @@
                 var pageEdits = edits.get(pageNum - 1);
                 if (pageEdits && pageEdits.size > 0) {
                   return page.getTextContent().then(function(textContent) {
-                    pageEdits.forEach(function(newText, itemIdx) {
-                      var item = textContent.items[itemIdx];
-                      if (!item) return;
-                      paintExportTextReplacement(ctx, viewport, item, newText);
-                    });
+                    applyExportTextReplacements(ctx, viewport, textContent, pageEdits);
                   });
                 }
               }).then(function() {
