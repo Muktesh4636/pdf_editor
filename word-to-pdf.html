@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Word to PDF Free Online — Convert DOCX to PDF | pdf.pravoo.in</title>
+<meta name="description" content="Convert Word DOCX files to PDF free online. No signup required, runs in your browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/word-to-pdf.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+.file-info{margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:12px}
+.file-info .fi-name{font-weight:700;font-size:.95rem;flex:1}
+.file-info .fi-size{color:var(--muted);font-size:.82rem}
+.actions{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+.btn-main{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#c92b2b}.btn-main:disabled{background:#ccc;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-clear:hover{border-color:#e84040;color:#e84040}
+#status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+/* Hidden render container */
+#render-container{position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:Georgia,serif;font-size:12pt;line-height:1.6;padding:72px 80px;color:#111;word-wrap:break-word}
+#render-container img{max-width:100%}
+#render-container table{width:100%;border-collapse:collapse;margin:8px 0}
+#render-container td,#render-container th{border:1px solid #ccc;padding:4px 8px;font-size:11pt}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / Word to PDF</span>
+  </div>
+</nav>
+<main>
+  <h1>📝 Word to PDF</h1>
+  <p class="sub">Convert .docx Word documents to PDF. Runs entirely in your browser — no upload to server.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a .docx file here</h2>
+    <p>Or click to browse your files</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose Word File</button>
+  </div>
+  <input type="file" id="file-input" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" style="display:none"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.6rem">📝</span>
+    <span class="fi-name" id="fi-name"></span>
+    <span class="fi-size" id="fi-size"></span>
+  </div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn-main" id="btn-convert">📥 Convert to PDF</button>
+    <button class="btn-clear" id="btn-clear">✕ Clear</button>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status"></div>
+</main>
+
+<!-- Off-screen container for rendering -->
+<div id="render-container"></div>
+
+<footer>
+  <p>Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener">Pravoo</a> — Web &amp; App Development, IT Solutions (Chennai, India)</p>
+  <p style="margin-top:6px;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a></p>
+</footer>
+
+<script>
+let chosenFile = null;
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', () => fi.click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => handleFile(fi.files[0]));
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('btn-convert').addEventListener('click', convert);
+
+function handleFile(f) {
+  if (!f || !f.name.match(/\.docx$/i)) { showStatus('Please select a .docx file.', 'err'); return; }
+  chosenFile = f;
+  document.getElementById('fi-name').textContent = f.name;
+  document.getElementById('fi-size').textContent = fmtSize(f.size);
+  document.getElementById('file-info').style.display = 'flex';
+  document.getElementById('actions').style.display = 'flex';
+  hideStatus();
+}
+
+function clearAll() {
+  chosenFile = null; fi.value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('actions').style.display = 'none';
+  hideStatus(); setProgress(0); document.getElementById('progress').style.display = 'none';
+}
+
+async function convert() {
+  if (!chosenFile) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true; btn.textContent = 'Converting…';
+  showProgress(); setProgress(10);
+  try {
+    const arrayBuffer = await chosenFile.arrayBuffer();
+    setProgress(20);
+    const result = await mammoth.convertToHtml({ arrayBuffer });
+    setProgress(40);
+    const html = result.value;
+
+    const container = document.getElementById('render-container');
+    container.innerHTML = html;
+    setProgress(50);
+
+    // Give browser time to lay out
+    await new Promise(r => setTimeout(r, 200));
+
+    const totalH = container.scrollHeight;
+    const pageH = 1122; // A4 at 96dpi
+    const pageW = 794;
+    const numPages = Math.ceil(totalH / pageH);
+
+    const pdfDoc = await PDFLib.PDFDocument.create();
+    setProgress(60);
+
+    for (let i = 0; i < numPages; i++) {
+      const canvas = await html2canvas(container, {
+        x: 0, y: i * pageH,
+        width: pageW, height: Math.min(pageH, totalH - i * pageH),
+        windowWidth: pageW, windowHeight: pageH,
+        scale: 1, useCORS: true, backgroundColor: '#fff'
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const img = await pdfDoc.embedJpg(dataUrlToBytes(imgData));
+      const page = pdfDoc.addPage([PDFLib.PageSizes.A4[0], PDFLib.PageSizes.A4[1]]);
+      const { width: pw, height: ph } = page.getSize();
+      page.drawImage(img, { x: 0, y: 0, width: pw, height: ph });
+      setProgress(60 + Math.round((i + 1) / numPages * 35));
+    }
+
+    const bytes = await pdfDoc.save();
+    setProgress(100);
+    download(bytes, chosenFile.name.replace(/\.docx$/i, '.pdf'));
+    showStatus('✅ Converted successfully!', 'ok');
+  } catch(e) {
+    showStatus('❌ Conversion failed: ' + e.message, 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Convert to PDF';
+    document.getElementById('render-container').innerHTML = '';
+  }
+}
+
+function dataUrlToBytes(dataUrl) {
+  const b64 = dataUrl.split(',')[1];
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+
+function download(bytes, name) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+function showProgress() { document.getElementById('progress').style.display = 'block'; }
+function setProgress(v) { document.getElementById('progress-bar').style.width = v + '%'; }
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = type === 'ok' ? 'status-ok' : 'status-err'; s.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function fmtSize(b) { return b > 1e6 ? (b/1e6).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; }
+</script>
+</body>
+</html>

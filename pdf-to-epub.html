@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PDF to EPUB Free Online — Convert PDF to Ebook | pdf.pravoo.in</title>
+<meta name="description" content="Convert PDF files to EPUB ebook format. Free, no signup, runs in browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/pdf-to-epub.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+.file-info{margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:12px}
+.fi-name{font-weight:700;font-size:.95rem;flex:1}.fi-size{color:var(--muted);font-size:.82rem}
+.actions{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+.btn-main{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#c92b2b}.btn-main:disabled{background:#ccc;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-clear:hover{border-color:#e84040;color:#e84040}
+#status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+.info-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:.85rem;color:#1e40af;margin-bottom:24px}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / PDF to EPUB</span>
+  </div>
+</nav>
+<main>
+  <h1>📚 PDF to EPUB</h1>
+  <p class="sub">Convert a PDF into a readable EPUB ebook. Each page becomes a chapter. Runs in your browser.</p>
+
+  <div class="info-note">ℹ️ Text content is extracted and saved as a reflowable EPUB. Images and complex layouts are not preserved.</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a PDF here</h2>
+    <p>Or click to browse</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.6rem">📄</span>
+    <span class="fi-name" id="fi-name"></span>
+    <span class="fi-size" id="fi-size"></span>
+  </div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn-main" id="btn-convert">📥 Convert to EPUB</button>
+    <button class="btn-clear" id="btn-clear">✕ Clear</button>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status"></div>
+</main>
+
+<footer>
+  <p>Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener">Pravoo</a> — Web &amp; App Development, IT Solutions (Chennai, India)</p>
+  <p style="margin-top:6px;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a></p>
+</footer>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let chosenFile = null;
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', () => fi.click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => handleFile(fi.files[0]));
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('btn-convert').addEventListener('click', convert);
+
+function handleFile(f) {
+  if (!f || !f.name.match(/\.pdf$/i)) { showStatus('Please select a .pdf file.', 'err'); return; }
+  chosenFile = f;
+  document.getElementById('fi-name').textContent = f.name;
+  document.getElementById('fi-size').textContent = fmtSize(f.size);
+  document.getElementById('file-info').style.display = 'flex';
+  document.getElementById('actions').style.display = 'flex';
+  hideStatus();
+}
+
+async function convert() {
+  if (!chosenFile) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true; btn.textContent = 'Extracting…';
+  showProgress(); setProgress(5);
+  try {
+    const ab = await chosenFile.arrayBuffer();
+    const pdfDoc = await pdfjsLib.getDocument({ data: ab }).promise;
+    const numPages = pdfDoc.numPages;
+    const title = chosenFile.name.replace(/\.pdf$/i, '');
+    const pageTexts = [];
+
+    for (let p = 1; p <= numPages; p++) {
+      const page = await pdfDoc.getPage(p);
+      const content = await page.getTextContent();
+      const lines = groupLines(content.items);
+      pageTexts.push(lines);
+      setProgress(5 + Math.round(p / numPages * 70));
+    }
+
+    setProgress(80);
+    const epubBytes = buildEpub(title, pageTexts);
+    setProgress(98);
+    downloadFile(epubBytes, title + '.epub', 'application/epub+zip');
+    setProgress(100);
+    showStatus('✅ Converted successfully! (' + numPages + ' pages)', 'ok');
+  } catch(e) {
+    showStatus('❌ Conversion failed: ' + e.message, 'err'); console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Convert to EPUB';
+  }
+}
+
+function groupLines(items) {
+  if (!items.length) return [];
+  const sorted = [...items].sort((a, b) => {
+    const dy = b.transform[5] - a.transform[5];
+    return Math.abs(dy) > 3 ? dy : a.transform[4] - b.transform[4];
+  });
+  const lines = [];
+  let currentLine = [], currentY = null;
+  for (const item of sorted) {
+    const y = Math.round(item.transform[5]);
+    if (currentY === null) currentY = y;
+    if (Math.abs(y - currentY) > 4) {
+      if (currentLine.length) lines.push(currentLine.map(i => i.str).join(' ').trim());
+      currentLine = [item]; currentY = y;
+    } else {
+      currentLine.push(item);
+    }
+  }
+  if (currentLine.length) lines.push(currentLine.map(i => i.str).join(' ').trim());
+  return lines.filter(l => l);
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function buildEpub(title, pageTexts) {
+  const zip = new JSZip();
+  const numPages = pageTexts.length;
+
+  // mimetype must be first and uncompressed
+  zip.file('mimetype', 'application/epub+zip', { compression: 'STORE' });
+
+  zip.file('META-INF/container.xml',
+    `<?xml version="1.0"?><container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles><rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/></rootfiles>
+</container>`);
+
+  // Chapter files
+  const manifestItems = [], spineItems = [], tocItems = [];
+  pageTexts.forEach((lines, i) => {
+    const id = 'page' + (i+1);
+    const fname = 'OEBPS/chapters/' + id + '.xhtml';
+    const paragraphs = lines.map(l => `<p>${esc(l)}</p>`).join('\n    ');
+    const xhtml = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head><title>Page ${i+1}</title>
+<style>body{font-family:Georgia,serif;font-size:1em;line-height:1.7;margin:1em 1.5em}p{margin-bottom:.8em}</style>
+</head>
+<body><h2>Page ${i+1}</h2>
+    ${paragraphs || '<p> </p>'}
+</body></html>`;
+    zip.file(fname, xhtml);
+    manifestItems.push(`<item id="${id}" href="chapters/${id}.xhtml" media-type="application/xhtml+xml"/>`);
+    spineItems.push(`<itemref idref="${id}"/>`);
+    tocItems.push(`<navPoint id="nav${id}" playOrder="${i+2}"><navLabel><text>Page ${i+1}</text></navLabel><content src="chapters/${id}.xhtml"/></navPoint>`);
+  });
+
+  // OPF
+  const uid = 'urn:uuid:' + ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g, c =>
+    (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
+  zip.file('OEBPS/content.opf', `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="2.0" unique-identifier="BookId">
+<metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <dc:title>${esc(title)}</dc:title>
+  <dc:language>en</dc:language>
+  <dc:identifier id="BookId">${uid}</dc:identifier>
+</metadata>
+<manifest>
+  <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+  ${manifestItems.join('\n  ')}
+</manifest>
+<spine toc="ncx">
+  ${spineItems.join('\n  ')}
+</spine>
+</package>`);
+
+  // NCX TOC
+  zip.file('OEBPS/toc.ncx', `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE ncx PUBLIC "-//NISO//DTD ncx 2005-1//EN" "http://www.daisy.org/z3986/2005/ncx-2005-1.dtd">
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+<head><meta name="dtb:uid" content="${uid}"/><meta name="dtb:depth" content="1"/></head>
+<docTitle><text>${esc(title)}</text></docTitle>
+<navMap>
+  <navPoint id="nav0" playOrder="1"><navLabel><text>${esc(title)}</text></navLabel><content src="chapters/page1.xhtml"/></navPoint>
+  ${tocItems.join('\n  ')}
+</navMap>
+</ncx>`);
+
+  return zip.generateSync({ type: 'uint8array', mimeType: 'application/epub+zip' });
+}
+
+function clearAll() {
+  chosenFile = null; fi.value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('actions').style.display = 'none';
+  hideStatus(); setProgress(0); document.getElementById('progress').style.display = 'none';
+}
+
+function downloadFile(bytes, name, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function showProgress() { document.getElementById('progress').style.display = 'block'; }
+function setProgress(v) { document.getElementById('progress-bar').style.width = v + '%'; }
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = type === 'ok' ? 'status-ok' : 'status-err'; s.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function fmtSize(b) { return b > 1e6 ? (b/1e6).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; }
+</script>
+</body>
+</html>

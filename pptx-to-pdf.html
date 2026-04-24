@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PPTX to PDF Free Online — Convert PowerPoint to PDF | pdf.pravoo.in</title>
+<meta name="description" content="Convert PowerPoint PPTX presentations to PDF free online. No signup, runs in browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/pptx-to-pdf.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+.file-info{margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:12px}
+.fi-name{font-weight:700;font-size:.95rem;flex:1}.fi-size{color:var(--muted);font-size:.82rem}
+.actions{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+.btn-main{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#c92b2b}.btn-main:disabled{background:#ccc;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-clear:hover{border-color:#e84040;color:#e84040}
+#status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+.slide-preview{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px}
+.slide-thumb{width:180px;background:#fff;border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.slide-canvas{display:block;width:100%}
+.slide-num{text-align:center;padding:5px;font-size:.75rem;color:var(--muted);font-weight:600}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / PPTX to PDF</span>
+  </div>
+</nav>
+<main>
+  <h1>📊 PPTX to PDF</h1>
+  <p class="sub">Convert PowerPoint .pptx presentations to PDF. Each slide becomes a PDF page. Runs in your browser.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📊</div>
+    <h2>Drag &amp; drop a .pptx file here</h2>
+    <p>Or click to browse</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PPTX File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation" style="display:none"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.6rem">📊</span>
+    <span class="fi-name" id="fi-name"></span>
+    <span class="fi-size" id="fi-size"></span>
+  </div>
+  <div class="slide-preview" id="slide-preview"></div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn-main" id="btn-convert">📥 Convert to PDF</button>
+    <button class="btn-clear" id="btn-clear">✕ Clear</button>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status"></div>
+</main>
+
+<footer>
+  <p>Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener">Pravoo</a> — Web &amp; App Development, IT Solutions (Chennai, India)</p>
+  <p style="margin-top:6px;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a></p>
+</footer>
+
+<script>
+let chosenFile = null, slides = [];
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', () => fi.click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => handleFile(fi.files[0]));
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('btn-convert').addEventListener('click', convert);
+
+async function handleFile(f) {
+  if (!f || !f.name.match(/\.pptx$/i)) { showStatus('Please select a .pptx file.', 'err'); return; }
+  chosenFile = f;
+  document.getElementById('fi-name').textContent = f.name;
+  document.getElementById('fi-size').textContent = fmtSize(f.size);
+  document.getElementById('file-info').style.display = 'flex';
+  showStatus('Parsing slides…', 'ok');
+  try {
+    const ab = await f.arrayBuffer();
+    slides = await parsePptx(ab);
+    renderPreviews();
+    document.getElementById('actions').style.display = 'flex';
+    hideStatus();
+  } catch(e) { showStatus('❌ Failed to parse PPTX: ' + e.message, 'err'); console.error(e); }
+}
+
+// Parse PPTX: extract slide count and text content per slide
+async function parsePptx(ab) {
+  const zip = await JSZip.loadAsync(ab);
+  // Find slide files
+  const slideFiles = Object.keys(zip.files)
+    .filter(n => n.match(/^ppt\/slides\/slide\d+\.xml$/))
+    .sort((a, b) => {
+      const na = parseInt(a.match(/\d+/)[0]);
+      const nb = parseInt(b.match(/\d+/)[0]);
+      return na - nb;
+    });
+
+  // Get presentation dimensions
+  let slideW = 9144000, slideH = 6858000; // default 10in x 7.5in in EMU
+  try {
+    const presXml = await zip.file('ppt/presentation.xml').async('text');
+    const wmatch = presXml.match(/cx="(\d+)"/);
+    const hmatch = presXml.match(/cy="(\d+)"/);
+    if (wmatch) slideW = parseInt(wmatch[1]);
+    if (hmatch) slideH = parseInt(hmatch[1]);
+  } catch(e) {}
+
+  const result = [];
+  for (const sf of slideFiles) {
+    const xml = await zip.file(sf).async('text');
+
+    // Extract background color
+    let bgColor = '#FFFFFF';
+    const bgMatch = xml.match(/<p:bg>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"[\s\S]*?<\/p:bg>/);
+    if (bgMatch) bgColor = '#' + bgMatch[1];
+
+    // Extract shapes: position, size, text
+    const shapes = [];
+    const spRe = /<p:sp>([\s\S]*?)<\/p:sp>/g;
+    let spMatch;
+    while ((spMatch = spRe.exec(xml)) !== null) {
+      const spXml = spMatch[1];
+      // Position & size
+      const offMatch = spXml.match(/a:off[^>]*x="([^"]+)"[^>]*y="([^"]+)"/);
+      const extMatch = spXml.match(/a:ext[^>]*cx="([^"]+)"[^>]*cy="([^"]+)"/);
+      if (!offMatch || !extMatch) continue;
+      const x = parseInt(offMatch[1]), y = parseInt(offMatch[2]);
+      const w = parseInt(extMatch[1]), h = parseInt(extMatch[2]);
+
+      // Extract all text
+      const texts = [];
+      const paraRe = /<a:p>([\s\S]*?)<\/a:p>/g;
+      let pMatch;
+      while ((pMatch = paraRe.exec(spXml)) !== null) {
+        const paraXml = pMatch[1];
+        const tRe = /<a:t>([^<]*)<\/a:t>/g;
+        let tMatch, line = '';
+        while ((tMatch = tRe.exec(paraXml)) !== null) line += tMatch[1];
+        if (line.trim()) texts.push(line);
+
+        // Font size from first run
+        if (!shapes.length || !shapes[shapes.length-1].fontSize) {
+          const szMatch = paraXml.match(/a:sz="?(\d+)"?/);
+          if (szMatch) shapes.push({ x, y, w, h, texts, fontSize: parseInt(szMatch[1]) / 100 });
+        }
+      }
+      if (texts.length) shapes.push({ x, y, w, h, texts, fontSize: 18 });
+    }
+
+    result.push({ bgColor, shapes, slideW, slideH });
+  }
+  return result;
+}
+
+// Render slide to canvas element
+function renderSlide(slide, canvasW, canvasH) {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvasW; canvas.height = canvasH;
+  const ctx = canvas.getContext('2d');
+  const scaleX = canvasW / slide.slideW;
+  const scaleY = canvasH / slide.slideH;
+
+  ctx.fillStyle = slide.bgColor;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+
+  for (const sp of slide.shapes) {
+    if (!sp.texts || !sp.texts.length) continue;
+    const x = sp.x * scaleX;
+    const y = sp.y * scaleY;
+    const w = sp.w * scaleX;
+    const h = sp.h * scaleY;
+    const fs = Math.max(8, Math.min(sp.fontSize * scaleY * 1.5, h / sp.texts.length));
+    ctx.font = `${fs}px Arial, sans-serif`;
+    ctx.fillStyle = '#111111';
+    ctx.textBaseline = 'top';
+    let lineY = y + 4;
+    for (const line of sp.texts) {
+      if (lineY + fs > y + h + 4) break;
+      ctx.fillText(line, x + 4, lineY, w - 8);
+      lineY += fs * 1.3;
+    }
+  }
+  return canvas;
+}
+
+function renderPreviews() {
+  const container = document.getElementById('slide-preview');
+  container.innerHTML = '';
+  const thumbW = 360, thumbH = Math.round(360 * (slides[0].slideH / slides[0].slideW));
+  slides.forEach((slide, i) => {
+    const canvas = renderSlide(slide, thumbW, thumbH);
+    canvas.className = 'slide-canvas';
+    const wrap = document.createElement('div');
+    wrap.className = 'slide-thumb';
+    const label = document.createElement('div');
+    label.className = 'slide-num'; label.textContent = 'Slide ' + (i+1);
+    wrap.appendChild(canvas); wrap.appendChild(label);
+    container.appendChild(wrap);
+  });
+}
+
+async function convert() {
+  if (!slides.length) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true; btn.textContent = 'Converting…';
+  showProgress(); setProgress(10);
+  try {
+    const pdfDoc = await PDFLib.PDFDocument.create();
+    const aspect = slides[0].slideH / slides[0].slideW;
+    const pageW = 841.89, pageH = pageW * aspect; // A4 landscape-ish
+
+    for (let i = 0; i < slides.length; i++) {
+      const canvas = renderSlide(slides[i], 1200, Math.round(1200 * aspect));
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const img = await pdfDoc.embedJpg(dataUrlToBytes(imgData));
+      const page = pdfDoc.addPage([pageW, pageH]);
+      page.drawImage(img, { x: 0, y: 0, width: pageW, height: pageH });
+      setProgress(10 + Math.round((i+1)/slides.length * 85));
+    }
+    const bytes = await pdfDoc.save();
+    setProgress(100);
+    download(bytes, chosenFile.name.replace(/\.pptx$/i, '.pdf'));
+    showStatus('✅ Converted successfully! (' + slides.length + ' slides)', 'ok');
+  } catch(e) {
+    showStatus('❌ Conversion failed: ' + e.message, 'err'); console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Convert to PDF';
+  }
+}
+
+function clearAll() {
+  chosenFile = null; slides = []; fi.value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('slide-preview').innerHTML = '';
+  document.getElementById('actions').style.display = 'none';
+  hideStatus(); setProgress(0); document.getElementById('progress').style.display = 'none';
+}
+
+function dataUrlToBytes(dataUrl) {
+  const b64 = dataUrl.split(',')[1], bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function download(bytes, name) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function showProgress() { document.getElementById('progress').style.display = 'block'; }
+function setProgress(v) { document.getElementById('progress-bar').style.width = v + '%'; }
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = type === 'ok' ? 'status-ok' : 'status-err'; s.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function fmtSize(b) { return b > 1e6 ? (b/1e6).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; }
+</script>
+</body>
+</html>

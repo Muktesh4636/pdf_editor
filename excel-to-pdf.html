@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Excel to PDF Free Online — Convert XLSX to PDF | pdf.pravoo.in</title>
+<meta name="description" content="Convert Excel XLSX/XLS/CSV spreadsheets to PDF free online. No signup, runs in browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/excel-to-pdf.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+.file-info{margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:12px}
+.fi-name{font-weight:700;font-size:.95rem;flex:1}.fi-size{color:var(--muted);font-size:.82rem}
+.sheet-tabs{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+.sheet-tab{padding:6px 16px;border-radius:100px;font-size:.82rem;font-weight:600;border:1px solid var(--border);cursor:pointer;background:#fff;color:var(--muted)}
+.sheet-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.actions{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+.btn-main{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#c92b2b}.btn-main:disabled{background:#ccc;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-clear:hover{border-color:#e84040;color:#e84040}
+#status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+/* Hidden render container */
+#render-container{position:fixed;left:-9999px;top:0;background:#fff;padding:20px;font-family:Arial,sans-serif;font-size:11px}
+#render-container table{border-collapse:collapse;white-space:nowrap}
+#render-container th{background:#e84040;color:#fff;padding:6px 10px;border:1px solid #c92b2b;font-weight:700;text-align:left}
+#render-container td{padding:5px 10px;border:1px solid #ddd}
+#render-container tr:nth-child(even) td{background:#f9f9f9}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / Excel to PDF</span>
+  </div>
+</nav>
+<main>
+  <h1>📊 Excel to PDF</h1>
+  <p class="sub">Convert .xlsx, .xls or .csv spreadsheets to PDF. Runs in your browser — no upload required.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📊</div>
+    <h2>Drag &amp; drop an Excel or CSV file here</h2>
+    <p>Supports .xlsx, .xls, .csv</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose File</button>
+  </div>
+  <input type="file" id="file-input" accept=".xlsx,.xls,.csv" style="display:none"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.6rem">📊</span>
+    <span class="fi-name" id="fi-name"></span>
+    <span class="fi-size" id="fi-size"></span>
+  </div>
+  <div class="sheet-tabs" id="sheet-tabs"></div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn-main" id="btn-convert">📥 Convert to PDF</button>
+    <button class="btn-clear" id="btn-clear">✕ Clear</button>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status"></div>
+</main>
+
+<div id="render-container"></div>
+
+<footer>
+  <p>Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener">Pravoo</a> — Web &amp; App Development, IT Solutions (Chennai, India)</p>
+  <p style="margin-top:6px;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a></p>
+</footer>
+
+<script>
+let chosenFile = null, workbook = null, activeSheet = 0;
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', () => fi.click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => handleFile(fi.files[0]));
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('btn-convert').addEventListener('click', convert);
+
+function handleFile(f) {
+  if (!f || !f.name.match(/\.(xlsx|xls|csv)$/i)) { showStatus('Please select an .xlsx, .xls or .csv file.', 'err'); return; }
+  chosenFile = f;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+      document.getElementById('fi-name').textContent = f.name;
+      document.getElementById('fi-size').textContent = fmtSize(f.size);
+      document.getElementById('file-info').style.display = 'flex';
+      renderSheetTabs();
+      document.getElementById('actions').style.display = 'flex';
+      hideStatus();
+    } catch(err) { showStatus('❌ Failed to read file: ' + err.message, 'err'); }
+  };
+  reader.readAsArrayBuffer(f);
+}
+
+function renderSheetTabs() {
+  const container = document.getElementById('sheet-tabs');
+  container.innerHTML = '';
+  workbook.SheetNames.forEach((name, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'sheet-tab' + (i === activeSheet ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => { activeSheet = i; renderSheetTabs(); };
+    container.appendChild(btn);
+  });
+}
+
+function sheetToHtml(sheetName) {
+  const ws = workbook.Sheets[sheetName];
+  const data = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+  if (!data.length) return '<p>Empty sheet</p>';
+  let html = '<table><thead><tr>';
+  const headers = data[0];
+  headers.forEach(h => { html += `<th>${escHtml(String(h))}</th>`; });
+  html += '</tr></thead><tbody>';
+  for (let r = 1; r < data.length; r++) {
+    html += '<tr>';
+    for (let c = 0; c < headers.length; c++) {
+      html += `<td>${escHtml(String(data[r][c] ?? ''))}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  return html;
+}
+
+async function convert() {
+  if (!workbook) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true; btn.textContent = 'Converting…';
+  showProgress(); setProgress(15);
+  try {
+    const sheetName = workbook.SheetNames[activeSheet];
+    const html = sheetToHtml(sheetName);
+    const container = document.getElementById('render-container');
+    container.innerHTML = html;
+    await new Promise(r => setTimeout(r, 300));
+
+    setProgress(40);
+    const totalH = container.scrollHeight;
+    const pageH = 1122, pageW = 1190; // landscape A4
+    container.style.width = pageW + 'px';
+    const numPages = Math.ceil(totalH / pageH);
+    const pdfDoc = await PDFLib.PDFDocument.create();
+
+    for (let i = 0; i < numPages; i++) {
+      const canvas = await html2canvas(container, {
+        x: 0, y: i * pageH, width: pageW,
+        height: Math.min(pageH, totalH - i * pageH),
+        windowWidth: pageW, scale: 1, useCORS: true, backgroundColor: '#fff'
+      });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const img = await pdfDoc.embedJpg(dataUrlToBytes(imgData));
+      // Landscape A4
+      const page = pdfDoc.addPage([841.89, 595.28]);
+      const { width: pw, height: ph } = page.getSize();
+      page.drawImage(img, { x: 0, y: 0, width: pw, height: ph });
+      setProgress(40 + Math.round((i + 1) / numPages * 55));
+    }
+
+    const bytes = await pdfDoc.save();
+    setProgress(100);
+    download(bytes, chosenFile.name.replace(/\.(xlsx|xls|csv)$/i, '.pdf'));
+    showStatus('✅ Converted successfully!', 'ok');
+  } catch(e) {
+    showStatus('❌ Conversion failed: ' + e.message, 'err'); console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Convert to PDF';
+    document.getElementById('render-container').innerHTML = '';
+    document.getElementById('render-container').style.width = '';
+  }
+}
+
+function clearAll() {
+  chosenFile = null; workbook = null; fi.value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('sheet-tabs').innerHTML = '';
+  document.getElementById('actions').style.display = 'none';
+  hideStatus(); setProgress(0); document.getElementById('progress').style.display = 'none';
+}
+
+function dataUrlToBytes(dataUrl) {
+  const b64 = dataUrl.split(',')[1], bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function download(bytes, name) {
+  const blob = new Blob([bytes], { type: 'application/pdf' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function showProgress() { document.getElementById('progress').style.display = 'block'; }
+function setProgress(v) { document.getElementById('progress-bar').style.width = v + '%'; }
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = type === 'ok' ? 'status-ok' : 'status-err'; s.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function fmtSize(b) { return b > 1e6 ? (b/1e6).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; }
+function escHtml(s) { return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+</script>
+</body>
+</html>

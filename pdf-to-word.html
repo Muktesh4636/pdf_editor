@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PDF to Word Free Online — Convert PDF to DOCX | pdf.pravoo.in</title>
+<meta name="description" content="Convert PDF files to editable Word DOCX documents free online. No signup, runs in browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/pdf-to-word.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+.file-info{margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:none;align-items:center;gap:12px}
+.fi-name{font-weight:700;font-size:.95rem;flex:1}.fi-size{color:var(--muted);font-size:.82rem}
+.actions{margin-top:24px;display:flex;gap:14px;flex-wrap:wrap}
+.btn-main{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer;transition:background .2s}
+.btn-main:hover{background:#c92b2b}.btn-main:disabled{background:#ccc;cursor:not-allowed}
+.btn-clear{background:none;border:1px solid var(--border);border-radius:10px;padding:12px 20px;font-size:.95rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.btn-clear:hover{border-color:#e84040;color:#e84040}
+#status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+.info-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:.85rem;color:#1e40af;margin-bottom:24px}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:700;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / PDF to Word</span>
+  </div>
+</nav>
+<main>
+  <h1>📝 PDF to Word</h1>
+  <p class="sub">Extract text from a PDF and download as an editable .docx Word document. Runs in your browser.</p>
+
+  <div class="info-note">ℹ️ Text and basic formatting are preserved. Complex layouts, images and tables may be simplified.</div>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a PDF here</h2>
+    <p>Or click to browse</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.6rem">📄</span>
+    <span class="fi-name" id="fi-name"></span>
+    <span class="fi-size" id="fi-size"></span>
+  </div>
+
+  <div class="actions" id="actions" style="display:none">
+    <button class="btn-main" id="btn-convert">📥 Convert to Word</button>
+    <button class="btn-clear" id="btn-clear">✕ Clear</button>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div id="status"></div>
+</main>
+
+<footer>
+  <p>Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener">Pravoo</a> — Web &amp; App Development, IT Solutions (Chennai, India)</p>
+  <p style="margin-top:6px;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a></p>
+</footer>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let chosenFile = null;
+const dz = document.getElementById('drop-zone');
+const fi = document.getElementById('file-input');
+
+dz.addEventListener('click', () => fi.click());
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); handleFile(e.dataTransfer.files[0]); });
+fi.addEventListener('change', () => handleFile(fi.files[0]));
+document.getElementById('btn-clear').addEventListener('click', clearAll);
+document.getElementById('btn-convert').addEventListener('click', convert);
+
+function handleFile(f) {
+  if (!f || !f.name.match(/\.pdf$/i)) { showStatus('Please select a .pdf file.', 'err'); return; }
+  chosenFile = f;
+  document.getElementById('fi-name').textContent = f.name;
+  document.getElementById('fi-size').textContent = fmtSize(f.size);
+  document.getElementById('file-info').style.display = 'flex';
+  document.getElementById('actions').style.display = 'flex';
+  hideStatus();
+}
+
+async function convert() {
+  if (!chosenFile) return;
+  const btn = document.getElementById('btn-convert');
+  btn.disabled = true; btn.textContent = 'Extracting text…';
+  showProgress(); setProgress(10);
+  try {
+    const ab = await chosenFile.arrayBuffer();
+    const pdfDoc = await pdfjsLib.getDocument({ data: ab }).promise;
+    const numPages = pdfDoc.numPages;
+    const pageContents = [];
+
+    for (let p = 1; p <= numPages; p++) {
+      const page = await pdfDoc.getPage(p);
+      const content = await page.getTextContent();
+      // Group items into lines by y-coordinate
+      const lines = groupIntoLines(content.items);
+      pageContents.push(lines);
+      setProgress(10 + Math.round(p / numPages * 60));
+    }
+
+    setProgress(75);
+    const docxBytes = buildDocx(pageContents);
+    setProgress(95);
+    downloadFile(docxBytes, chosenFile.name.replace(/\.pdf$/i, '.docx'),
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    setProgress(100);
+    showStatus('✅ Converted successfully!', 'ok');
+  } catch(e) {
+    showStatus('❌ Conversion failed: ' + e.message, 'err'); console.error(e);
+  } finally {
+    btn.disabled = false; btn.textContent = '📥 Convert to Word';
+  }
+}
+
+function groupIntoLines(items) {
+  if (!items.length) return [];
+  const sorted = [...items].sort((a, b) => b.transform[5] - a.transform[5]);
+  const lines = [];
+  let currentLine = [], currentY = null;
+  for (const item of sorted) {
+    const y = Math.round(item.transform[5]);
+    if (currentY === null) currentY = y;
+    if (Math.abs(y - currentY) > 3) {
+      if (currentLine.length) lines.push(currentLine.map(i => i.str).join(' '));
+      currentLine = [item]; currentY = y;
+    } else {
+      currentLine.push(item);
+    }
+  }
+  if (currentLine.length) lines.push(currentLine.map(i => i.str).join(' '));
+  return lines;
+}
+
+function buildDocx(pageContents) {
+  const zip = new JSZip();
+
+  const contentTypesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+  <Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/>
+</Types>`;
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`;
+
+  const docRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
+</Relationships>`;
+
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:style w:type="paragraph" w:styleId="Normal" w:default="1">
+    <w:name w:val="Normal"/>
+    <w:pPr><w:spacing w:after="160"/></w:pPr>
+    <w:rPr><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr>
+  </w:style>
+</w:styles>`;
+
+  let bodyXml = '';
+  pageContents.forEach((lines, pi) => {
+    if (pi > 0) {
+      bodyXml += `<w:p><w:r><w:br w:type="page"/></w:r></w:p>`;
+    }
+    for (const line of lines) {
+      const escaped = line.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      bodyXml += `<w:p><w:r><w:t xml:space="preserve">${escaped}</w:t></w:r></w:p>`;
+    }
+  });
+
+  const documentXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:wpc="http://schemas.microsoft.com/office/word/2010/wordprocessingCanvas"
+  xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>${bodyXml}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440"/></w:sectPr></w:body>
+</w:document>`;
+
+  zip.file('[Content_Types].xml', contentTypesXml);
+  zip.file('_rels/.rels', relsXml);
+  zip.file('word/document.xml', documentXml);
+  zip.file('word/_rels/document.xml.rels', docRelsXml);
+  zip.file('word/styles.xml', stylesXml);
+
+  return zip.generateSync({ type: 'uint8array' });
+}
+
+function clearAll() {
+  chosenFile = null; fi.value = '';
+  document.getElementById('file-info').style.display = 'none';
+  document.getElementById('actions').style.display = 'none';
+  hideStatus(); setProgress(0); document.getElementById('progress').style.display = 'none';
+}
+
+function downloadFile(bytes, name, mime) {
+  const blob = new Blob([bytes], { type: mime });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+function showProgress() { document.getElementById('progress').style.display = 'block'; }
+function setProgress(v) { document.getElementById('progress-bar').style.width = v + '%'; }
+function showStatus(msg, type) {
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = type === 'ok' ? 'status-ok' : 'status-err'; s.style.display = 'block';
+}
+function hideStatus() { document.getElementById('status').style.display = 'none'; }
+function fmtSize(b) { return b > 1e6 ? (b/1e6).toFixed(1)+' MB' : Math.round(b/1024)+' KB'; }
+</script>
+</body>
+</html>
