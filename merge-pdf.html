@@ -49,8 +49,13 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .fname-input:focus{color:var(--primary)}
 #status{margin-top:18px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
 .status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
-.progress{display:none;margin-top:16px;background:#e5e7eb;border-radius:100px;height:6px}
-.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .3s}
+.progress-wrap{display:none;margin-top:20px}
+.progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:.88rem;font-weight:600;color:var(--text)}
+.progress-pct{color:var(--primary)}
+.progress{background:#e5e7eb;border-radius:100px;height:10px;overflow:hidden}
+.progress-bar{height:10px;border-radius:100px;background:linear-gradient(90deg,#e84040,#ff6b6b);width:0%;transition:width .25s ease;position:relative}
+.progress-bar::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.35) 50%,transparent 100%);animation:shimmer 1.2s infinite}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
 </style>
 </head>
 <body>
@@ -84,7 +89,13 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
     <label for="out-name">📄 Output filename:</label>
     <input type="text" id="out-name" class="fname-input" value="merged.pdf" spellcheck="false"/>
   </div>
-  <div class="progress" id="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress-label">
+      <span id="progress-msg">Preparing…</span>
+      <span class="progress-pct" id="progress-pct">0%</span>
+    </div>
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
   <div id="status"></div>
 </main>
 <script>
@@ -97,8 +108,6 @@ var fileList  = document.getElementById('file-list');
 var actions   = document.getElementById('actions');
 var fnameWrap = document.getElementById('fname-wrap');
 var status    = document.getElementById('status');
-var progress  = document.getElementById('progress');
-var pbar      = document.getElementById('progress-bar');
 
 dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('over'); });
 dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('over'); });
@@ -162,34 +171,43 @@ document.getElementById('btn-merge').addEventListener('click', async function(){
 
   var btn = document.getElementById('btn-merge');
   btn.disabled=true; btn.textContent='Merging…';
-  showStatus('',''); progress.style.display='block'; pbar.style.width='5%';
+  showStatus('','');
+
+  // Show progress bar immediately
+  setProgress(0, 'Reading files…');
 
   try {
-    /* Read all files as ArrayBuffers */
+    // Read all files in parallel for speed
+    setProgress(5, 'Reading ' + files.length + ' files…');
     var buffers = await Promise.all(files.map(function(f){ return f.arrayBuffer(); }));
+    setProgress(15, 'Creating output PDF…');
 
-    /* Create the output document */
     var merged = await PDFLib.PDFDocument.create();
 
     for (var i = 0; i < buffers.length; i++) {
+      var label = 'Merging ' + (i+1) + ' of ' + files.length + ': ' + files[i].name;
+      setProgress(15 + Math.round((i / files.length) * 75), label);
       try {
-        var src = await PDFLib.PDFDocument.load(buffers[i], { ignoreEncryption: true });
-        var indices = src.getPageIndices();
-        var copied  = await merged.copyPages(src, indices);
+        var src = await PDFLib.PDFDocument.load(buffers[i], {
+          ignoreEncryption: true,
+          parseSpeed: PDFLib.ParseSpeeds ? PDFLib.ParseSpeeds.Fastest : undefined
+        });
+        var copied = await merged.copyPages(src, src.getPageIndices());
         copied.forEach(function(p){ merged.addPage(p); });
       } catch(e) {
         throw new Error('Could not read "' + files[i].name + '": ' + (e.message || e));
       }
-      pbar.style.width = Math.round(((i+1)/buffers.length) * 85) + '%';
     }
 
-    var bytes = await merged.save();
-    pbar.style.width = '100%';
+    setProgress(92, 'Saving PDF…');
+    var bytes = await merged.save({ useObjectStreams: false });
+    setProgress(100, 'Done!');
 
-    /* Get filename from input, default to merged.pdf */
+    // Get filename
     var outName = (document.getElementById('out-name').value || 'merged').trim();
     if(!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
+    // Trigger download immediately
     var blob = new Blob([bytes], {type:'application/pdf'});
     var url  = URL.createObjectURL(blob);
     var a    = document.createElement('a');
@@ -198,13 +216,14 @@ document.getElementById('btn-merge').addEventListener('click', async function(){
     document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
 
-    showStatus('✅ Merged ' + files.length + ' PDFs → ' + outName, 'ok');
+    showStatus('✅ Merged ' + files.length + ' PDFs → ' + outName + ' (' + fmtSize(bytes.byteLength) + ')', 'ok');
   } catch(e) {
     console.error('Merge error:', e);
     showStatus('❌ ' + (e.message || String(e)), 'err');
+    setProgress(0, '');
+    document.getElementById('progress-wrap').style.display = 'none';
   } finally {
     btn.disabled=false; btn.textContent='🔗 Merge PDFs';
-    setTimeout(function(){ progress.style.display='none'; pbar.style.width='0%'; }, 2000);
   }
 });
 
@@ -213,6 +232,13 @@ function showStatus(msg, type){
   status.textContent=msg;
   status.className = type==='ok'?'status-ok':'status-err';
   status.style.display='block';
+}
+function setProgress(pct, msg){
+  var wrap = document.getElementById('progress-wrap');
+  wrap.style.display = 'block';
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  if(msg) document.getElementById('progress-msg').textContent = msg;
 }
 function fmtSize(b){ return b>1e6?(b/1e6).toFixed(1)+' MB':Math.round(b/1024)+' KB'; }
 function escHtml(s){ return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
