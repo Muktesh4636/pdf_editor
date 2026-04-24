@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Remove Pages from PDF Free — Delete PDF Pages | pdf.pravoo.in</title>
+<title>Remove Pages from PDF Free — Delete PDF Pages | PDF Forge</title>
 <meta name="description" content="Remove pages from a PDF online for free. Preview all pages, select which to delete, download the result."/>
 <link rel="canonical" href="https://pdf.pravoo.in/remove-pages.html"/>
 <link rel="icon" href="/favicon.ico"/>
@@ -51,7 +51,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 <body>
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <a class="logo" href="/"><span>PDF</span> Forge</a>
     <span class="breadcrumb">/ <a href="/">Tools</a> / Remove Pages</span>
   </div>
 </nav>
@@ -63,7 +63,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
     <div class="drop-icon">📄</div>
     <h2>Drag &amp; drop a PDF file here</h2>
     <p>Or click to choose a file</p>
-    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+    <button class="btn-pick" id="btn-pick">Choose PDF File</button>
   </div>
   <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
 
@@ -79,7 +79,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 </main>
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-var originalBuf=null, pdfJsDoc=null, selected=new Set(), deleted=new Set(), totalPages=0;
+var originalBuf=null, pdfJsDoc=null, selected=new Set(), deleted=new Set(), totalPages=0, originalName='document.pdf';
 
 var dropZone=document.getElementById('drop-zone');
 var fileInput=document.getElementById('file-input');
@@ -87,6 +87,7 @@ dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.cla
 dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
 dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');loadFile(e.dataTransfer.files[0]);});
 dropZone.addEventListener('click',function(){fileInput.click();});
+document.getElementById('btn-pick').addEventListener('click',function(e){e.stopPropagation();fileInput.click();});
 fileInput.addEventListener('change',function(){loadFile(fileInput.files[0]);fileInput.value='';});
 
 async function loadFile(f){
@@ -94,7 +95,8 @@ async function loadFile(f){
   selected.clear(); deleted.clear(); document.getElementById('pages-grid').innerHTML='';
   showStatus('Loading...','');
   var buf=await f.arrayBuffer();
-  originalBuf=new Uint8Array(buf);
+  originalName = f.name || 'document.pdf';
+  originalBuf=new Uint8Array(buf.slice(0));
   pdfJsDoc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
   totalPages=pdfJsDoc.numPages;
   document.getElementById('toolbar').style.display='flex';
@@ -174,7 +176,8 @@ document.getElementById('btn-save').addEventListener('click',async function(){
     var bytes=await out.save();
     pbar.style.width='100%';
     var blob=new Blob([bytes],{type:'application/pdf'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='trimmed.pdf';a.click();
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=originalName;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
     showStatus('✅ Saved! '+deleted.size+' page(s) removed. Download started.','ok');
   }catch(e){showStatus('Error: '+e.message,'err');}
   btn.disabled=false; btn.textContent='⬇ Save PDF';
@@ -188,6 +191,6 @@ function showStatus(msg,type){
   s.textContent=msg; s.className=type==='ok'?'status-ok':'status-err'; s.style.display='block';
 }
 </script>
-<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a> — Free PDF tools. No signup. No limits.</p></footer>
+<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
 </body>
 </html>

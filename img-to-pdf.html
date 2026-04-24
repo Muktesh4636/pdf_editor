@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Image to PDF Free Online — Convert JPG PNG to PDF | pdf.pravoo.in</title>
+<title>Image to PDF Free Online — Convert JPG PNG to PDF | PDF Forge</title>
 <meta name="description" content="Convert JPG, PNG, WebP or GIF images to a PDF file online for free. Drag to reorder images."/>
 <link rel="canonical" href="https://pdf.pravoo.in/img-to-pdf.html"/>
 <link rel="icon" href="/favicon.ico"/>
@@ -52,7 +52,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 <body>
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <a class="logo" href="/"><span>PDF</span> Forge</a>
     <span class="breadcrumb">/ <a href="/">Tools</a> / Image to PDF</span>
   </div>
 </nav>
@@ -64,7 +64,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
     <div class="drop-icon">🖼️</div>
     <h2>Drag &amp; drop images here</h2>
     <p>JPG, PNG, WebP, GIF — multiple files supported</p>
-    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose Images</button>
+    <button class="btn-pick" id="btn-pick">Choose Images</button>
   </div>
   <input type="file" id="file-input" multiple accept="image/*" style="display:none"/>
 
@@ -98,6 +98,7 @@ dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.cla
 dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
 dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');addFiles(Array.from(e.dataTransfer.files));});
 dropZone.addEventListener('click',function(){fileInput.click();});
+document.getElementById('btn-pick').addEventListener('click',function(e){e.stopPropagation();fileInput.click();});
 fileInput.addEventListener('change',function(){addFiles(Array.from(fileInput.files));fileInput.value='';});
 
 function addFiles(files){
@@ -171,7 +172,8 @@ document.getElementById('btn-convert').addEventListener('click',async function()
     var bytes=await pdf.save();
     pbar.style.width='100%';
     var blob=new Blob([bytes],{type:'application/pdf'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='images.pdf';a.click();
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='images.pdf';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
     showStatus('✅ PDF created! Download started.','ok');
   }catch(e){showStatus('Error: '+e.message,'err');}
   btn.disabled=false; btn.textContent='🖼️ Convert to PDF';
@@ -184,6 +186,6 @@ function showStatus(msg,type){
   s.textContent=msg; s.className=type==='ok'?'status-ok':'status-err'; s.style.display='block';
 }
 </script>
-<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a> — Free PDF tools. No signup. No limits.</p></footer>
+<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
 </body>
 </html>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Compress PDF Free Online — Reduce PDF Size | pdf.pravoo.in</title>
+<title>Compress PDF Free Online — Reduce PDF Size | PDF Forge</title>
 <meta name="description" content="Compress and reduce PDF file size online for free. Choose quality level and download."/>
 <link rel="canonical" href="https://pdf.pravoo.in/compress-pdf.html"/>
 <link rel="icon" href="/favicon.ico"/>
@@ -53,7 +53,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 <body>
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <a class="logo" href="/"><span>PDF</span> Forge</a>
     <span class="breadcrumb">/ <a href="/">Tools</a> / Compress PDF</span>
   </div>
 </nav>
@@ -65,7 +65,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
     <div class="drop-icon">📄</div>
     <h2>Drag &amp; drop a PDF file here</h2>
     <p>Or click to choose a file</p>
-    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+    <button class="btn-pick" id="btn-pick">Choose PDF File</button>
   </div>
   <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
 
@@ -113,6 +113,8 @@ dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.
 dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('over'); });
 dropZone.addEventListener('drop', function(e){ e.preventDefault(); dropZone.classList.remove('over'); loadFile(e.dataTransfer.files[0]); });
 dropZone.addEventListener('click', function(){ fileInput.click(); });
+/* btn-pick is inside drop-zone — stop propagation so it doesn't trigger the drop-zone click handler too */
+document.getElementById('btn-pick').addEventListener('click', function(e){ e.stopPropagation(); fileInput.click(); });
 fileInput.addEventListener('change', function(){ loadFile(fileInput.files[0]); fileInput.value=''; });
 
 function loadFile(f){
@@ -160,7 +162,8 @@ document.getElementById('btn-compress').addEventListener('click', async function
     var saving = Math.round((1 - outBytes.length/currentFile.size)*100);
     var blob=new Blob([outBytes],{type:'application/pdf'});
     var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-    a.download='compressed_'+currentFile.name; a.click();
+    a.download='compressed_'+currentFile.name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     var rb=document.getElementById('result-box');
     rb.innerHTML='<div class="result-row"><span>Original size:</span><b>'+fmtSize(currentFile.size)+'</b></div>'
       +'<div class="result-row"><span>Compressed size:</span><b>'+fmtSize(outBytes.length)+'</b></div>'
@@ -179,6 +182,6 @@ function showStatus(msg,type){
 function fmtSize(b){ return b>1e6?(b/1e6).toFixed(1)+' MB':Math.round(b/1024)+' KB'; }
 function escHtml(s){ return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
 </script>
-<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a> — Free PDF tools. No signup. No limits.</p></footer>
+<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
 </body>
 </html>

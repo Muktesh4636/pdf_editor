@@ -237,6 +237,32 @@
       box-shadow: 0 3px 10px rgba(245,158,11,0.3);
     }
     .tbtn-stamp:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245,158,11,0.45); }
+    .tbtn-highlight {
+      background: linear-gradient(135deg,#eab308,#ca8a04); color: white;
+      box-shadow: 0 3px 10px rgba(234,179,8,0.3);
+    }
+    .tbtn-highlight:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(234,179,8,0.45); }
+    /* When highlight mode is active, all text overlays become visible */
+    body.highlight-mode .tx {
+      background: rgba(255,250,140,0.7) !important;
+      outline: 1.5px solid #ca8a04 !important;
+      min-height: 16px !important;
+    }
+    body.highlight-mode .ann-field {
+      background: rgba(190,224,255,0.75) !important;
+      border-color: #3182ce !important;
+    }
+    /* On touch screens, expand tap target area to at least 28px */
+    @media (hover: none) and (pointer: coarse) {
+      .tx {
+        min-height: 28px !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+      }
+      .ann-field {
+        min-height: 28px !important;
+      }
+    }
     .tbtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     .hint-bar {
@@ -308,6 +334,19 @@
     .tx.modified { background: white !important; color: #111 !important; outline: 2px solid #10b981 !important; }
     .tx.modified:hover { outline-color: #10b981 !important; background: rgba(255,255,255,0.98) !important; color: #111 !important; }
     .tx.modified:focus  { outline-color: var(--primary) !important; background: rgba(255,255,255,0.98) !important; color: #111 !important; }
+
+    /* AcroForm annotation fields — styled like form inputs */
+    .ann-field {
+      position: absolute; box-sizing: border-box; z-index: 15;
+      background: rgba(66,153,225,0.07); border: 1.5px solid rgba(66,153,225,0.45);
+      border-radius: 2px; cursor: text; outline: none; color: #1a202c;
+      font-family: Helvetica, Arial, sans-serif; white-space: pre-wrap;
+      word-break: break-word; overflow: hidden; padding: 1px 4px;
+      touch-action: manipulation; -webkit-tap-highlight-color: rgba(66,153,225,0.12);
+    }
+    .ann-field:focus { background: rgba(255,255,255,0.97); border-color: #3182ce; z-index: 25;
+      box-shadow: 0 0 0 2px rgba(49,130,206,0.25); color: #000; }
+    .ann-field.modified { background: white !important; border-color: #10b981 !important; color: #111 !important; }
 
     /* Loading overlay */
     #loading {
@@ -470,6 +509,7 @@
   <div class="toolbar">
     <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" disabled>&#128190; Save &amp; Download</button>
     <button class="tbtn tbtn-stamp" id="btn-stamp" onclick="triggerStampUpload()" title="Add signature, stamp, or image">&#9998; Stamp / Sign</button>
+    <button class="tbtn tbtn-highlight" id="btn-highlight" onclick="toggleHighlight()" title="Show / hide all editable text areas">&#128269; Show Text Areas</button>
     <input type="file" id="stamp-input" accept="image/*" style="display:none" />
     <div class="toolbar-spacer"></div>
     <span class="edit-badge" id="edit-badge"></span>
@@ -500,6 +540,8 @@
   var savedBytes    = null;
   var pdfArchiveId  = null; // server row id for before/after PDF storage
   var edits         = new Map(); // pageIndex(0-based) -> Map(itemIndex -> newText)
+  /* annEdits: pageNum(1-based) -> Map(fieldId -> {value, rect}) for AcroForm widget fields */
+  var annEdits      = new Map();
   /* overlays: pageNum(1-based) -> Array of {el, dataUrl, x, y, w, h} */
   var overlays      = new Map();
 
@@ -581,9 +623,26 @@
     overlays.forEach(function(arr) { total += arr.length; });
     itemShiftPx.forEach(function(m) { total += m.size; });
     insertedLines.forEach(function(arr) { total += arr.length; });
+    annEdits.forEach(function(m) { total += m.size; });
     var badge = $('edit-badge');
     badge.style.display = total > 0 ? 'inline-block' : 'none';
     badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
+    $('btn-save-dl').style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+
+  /* ---- Highlight mode: make all text areas visible ---- */
+  var highlightOn = false;
+  function toggleHighlight() {
+    highlightOn = !highlightOn;
+    document.body.classList.toggle('highlight-mode', highlightOn);
+    var btn = $('btn-highlight');
+    if (highlightOn) {
+      btn.textContent = '✕ Hide Text Areas';
+      btn.style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
+    } else {
+      btn.textContent = '🔍 Show Text Areas';
+      btn.style.background = '';
+    }
   }
 
   /* ---- Stamp / Signature overlay ---- */
@@ -860,6 +919,7 @@
       savedBytes    = null;
       pdfArchiveId  = null;
       edits         = new Map();
+      annEdits      = new Map();
       overlays      = new Map();
       document.querySelectorAll('.img-overlay').forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
       lineGroups    = new Map();
@@ -879,7 +939,15 @@
       return renderAll();
     }).then(function() {
       hideLoading();
-      toast('Loaded ' + pdfJsDoc.numPages + ' page(s). Click any text to edit.', 'success');
+      var txCount = document.querySelectorAll('.tx, .ann-field').length;
+      var isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      if (txCount === 0) {
+        toast('No editable text found. This appears to be a scanned PDF — only the Stamp/Sign tool works on it.', 'info');
+      } else {
+        toast('Loaded ' + pdfJsDoc.numPages + ' page(s) — ' + txCount + ' text area' + (txCount !== 1 ? 's' : '') + ' found. Tap any to edit.', 'success');
+        /* On touch screens auto-enable highlight so tiny text areas are visible */
+        if (isTouchDevice && !highlightOn) toggleHighlight();
+      }
       archiveOriginalPdf(file);
     }).catch(function(err) {
       hideLoading();
@@ -945,19 +1013,23 @@
           ctx.scale(dpr, dpr);
 
           return page.render({ canvasContext: ctx, viewport: viewport }).promise.then(function() {
-            return page.getTextContent();
-          }).then(function(textContent) {
+            return Promise.all([page.getTextContent(), page.getAnnotations({intent: 'any'})]);
+          }).then(function(results) {
+            var textContent = results[0];
+            var annotations = results[1];
             var layer = document.createElement('div');
             layer.className = 'text-layer';
 
             /* Store preview scale for this page (used in export coordinate conversion) */
             pagePreviewScale.set(pageNum - 1, viewport.scale);
 
+            var textItemCount = 0;
             textContent.items.forEach(function(item, idx) {
               if (!item.str) return;
               var tx       = pdfjsLib.Util.transform(viewport.transform, item.transform);
               var fontSize = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
-              if (fontSize < 1) return;
+              if (fontSize < 0.5) return;
+              textItemCount++;
 
               var el = document.createElement('div');
               el.className       = 'tx';
@@ -1009,7 +1081,14 @@
                 eraseCanvasUnderTx(el);
               });
 
+              el.addEventListener('focus', function() {
+                /* On mobile: turn off highlight while editing so the field is clear */
+                if (highlightOn) document.body.classList.remove('highlight-mode');
+              });
+
               el.addEventListener('blur', function() {
+                /* Restore highlight mode after editing */
+                if (highlightOn) document.body.classList.add('highlight-mode');
                 var changed = el.textContent !== el.dataset.orig;
                 if (changed) {
                   eraseCanvasUnderTx(el);
@@ -1034,6 +1113,60 @@
 
               layer.appendChild(el);
             });
+
+            /* ---- AcroForm / Widget annotation fields ---- */
+            var annFieldCount = 0;
+            function applyVpT(pt, m) {
+              return [m[0]*pt[0] + m[2]*pt[1] + m[4], m[1]*pt[0] + m[3]*pt[1] + m[5]];
+            }
+            annotations.forEach(function(ann) {
+              if (ann.subtype !== 'Widget' || ann.fieldType !== 'Tx') return;
+              if (!ann.rect || ann.rect.length < 4) return;
+              /* Transform annotation rect from PDF coords → viewport coords */
+              var p1 = applyVpT([ann.rect[0], ann.rect[1]], viewport.transform);
+              var p2 = applyVpT([ann.rect[2], ann.rect[3]], viewport.transform);
+              var vx = Math.min(p1[0], p2[0]);
+              var vy = Math.min(p1[1], p2[1]);
+              var vw = Math.abs(p2[0] - p1[0]);
+              var vh = Math.abs(p2[1] - p1[1]);
+              if (vw < 4 || vh < 4) return;
+              annFieldCount++;
+
+              var aEl = document.createElement('div');
+              aEl.className       = 'ann-field';
+              aEl.contentEditable = 'true';
+              aEl.textContent     = ann.fieldValue || '';
+              aEl.style.left      = vx + 'px';
+              aEl.style.top       = vy + 'px';
+              aEl.style.width     = vw + 'px';
+              aEl.style.height    = vh + 'px';
+              aEl.style.fontSize  = Math.max(8, Math.round(vh * 0.65)) + 'px';
+              aEl.style.lineHeight= '1.2';
+              /* Store PDF-space rect for export */
+              aEl.dataset.annRect = JSON.stringify(ann.rect);
+              aEl.dataset.annPage = String(pageNum);
+              aEl.dataset.origVal = ann.fieldValue || '';
+
+              aEl.addEventListener('input', function() {
+                if (!annEdits.has(pageNum)) annEdits.set(pageNum, new Map());
+                var fieldId = (ann.id || ann.fieldName || vx + '_' + vy);
+                annEdits.get(pageNum).set(fieldId, {
+                  value: aEl.textContent,
+                  rect:  ann.rect,
+                  fontSize: Math.max(8, Math.round(vh * 0.65))
+                });
+                aEl.classList.add('modified');
+                updateBadge();
+              });
+              aEl.addEventListener('touchstart', function() {}, { passive: true });
+
+              layer.appendChild(aEl);
+            });
+
+            /* Scanned PDF detection: no text items AND no form fields */
+            if (textItemCount === 0 && annFieldCount === 0 && pageNum === 1) {
+              toast('No editable text found on page 1. This may be a scanned PDF — text in scanned images cannot be edited.', 'info');
+            }
 
             wrap.appendChild(canvas);
             wrap.appendChild(layer);
@@ -1658,6 +1791,7 @@
       overlays.forEach(function(arr) { total += arr.length; });
       itemShiftPx.forEach(function(m) { total += m.size; });
       insertedLines.forEach(function(arr) { total += arr.length; });
+      annEdits.forEach(function(m) { total += m.size; });
       if (total === 0) { toast('Make an edit first.', 'info'); return; }
 
       showLoading('Exporting...');
@@ -1701,6 +1835,35 @@
                   return page.getTextContent().then(function(textContent) {
                     applyExportTextReplacements(ctx, viewport, textContent,
                       hasEdits ? pageEdits : new Map(), pageShifts, prevScale, pageNum - 1);
+                  });
+                }
+              }).then(function() {
+                /* Draw AcroForm annotation field edits onto the export canvas */
+                var pageAnnEdits = annEdits.get(pageNum);
+                if (pageAnnEdits && pageAnnEdits.size > 0) {
+                  function applyVpTExport(pt, m) {
+                    return [m[0]*pt[0] + m[2]*pt[1] + m[4], m[1]*pt[0] + m[3]*pt[1] + m[5]];
+                  }
+                  pageAnnEdits.forEach(function(annEdit) {
+                    var rect = annEdit.rect;
+                    var p1 = applyVpTExport([rect[0], rect[1]], viewport.transform);
+                    var p2 = applyVpTExport([rect[2], rect[3]], viewport.transform);
+                    var vx = Math.min(p1[0], p2[0]);
+                    var vy = Math.min(p1[1], p2[1]);
+                    var vw = Math.abs(p2[0] - p1[0]);
+                    var vh = Math.abs(p2[1] - p1[1]);
+                    /* White fill to cover original field background */
+                    ctx.save();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(vx, vy, vw, vh);
+                    /* Draw typed value */
+                    if (annEdit.value) {
+                      var fs = Math.max(8, Math.round(vh * 0.65));
+                      ctx.fillStyle = '#000000';
+                      ctx.font = fs + 'px Helvetica, Arial, sans-serif';
+                      ctx.fillText(annEdit.value, vx + 3, vy + vh * 0.78, vw - 6);
+                    }
+                    ctx.restore();
                   });
                 }
               }).then(function() {
@@ -1761,6 +1924,7 @@
         hideLoading();
         $('edit-badge').style.display  = 'none';
         edits    = new Map();
+        annEdits = new Map();
         overlays = new Map();
         lineGroups   = new Map();
         itemShiftPx  = new Map();
