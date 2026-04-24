@@ -1035,9 +1035,9 @@
   /*
    * Export text replacement: geometry for one text item (PDF.js viewport space).
    *
-   * Erase box is intentionally TIGHT — only just covering the original glyph
-   * pixels so neighbouring lines (above/below) are not wiped.
-   * Draw box uses the measured new-text width so the replacement fits.
+   * Erase uses the measured bounds of the ORIGINAL text (sOld) plus small pad.
+   * No aggressive cap — the "erase-all then draw-all" order already prevents
+   * one item's erase from wiping another item's freshly-drawn text.
    */
   function buildExportTextLayout(ctx, viewport, item, newText) {
     var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
@@ -1059,58 +1059,44 @@
     if (typeof item.width === 'number' && item.width > 0) {
       wPdf = Math.hypot(tx[0] * item.width, tx[1] * item.width);
     }
-    var glyphGuessOld = Math.max(sOld.length, 1) * fs * 0.62;
-    var glyphGuessNew = Math.max((sNew || '').length, 1) * fs * 0.62;
+    var glyphGuessOld = Math.max(sOld.length, 1) * fs * 0.65;
+    var glyphGuessNew = Math.max((sNew || '').length, 1) * fs * 0.65;
 
-    /* eraseW covers the original text; drawW covers the replacement */
-    var padX = Math.max(fs * 0.15, 3);
-    var eraseW = Math.max(wOld, wPdf, glyphGuessOld) * 1.08 + padX * 2;
-    var drawW  = Math.max(wNew, glyphGuessNew) * 1.08 + padX * 2;
+    var padX = Math.max(fs * 0.15, 4);
+    /* eraseW must cover the WIDER of old (we're erasing) and new (we're drawing) */
+    var eraseW = Math.max(wOld, wNew, wPdf, glyphGuessOld, glyphGuessNew) * 1.10 + padX * 2;
 
-    /* ---- heights: use PDF.js item.height if available (most reliable) ---- */
-    var itemHeightPx = 0;
-    if (typeof item.height === 'number' && item.height > 0) {
-      /* item.height is in PDF user-space units; scale matches fs derivation */
-      var scaleY = Math.abs(viewport.transform[3]) || (fs / Math.max(item.height, 0.01));
-      itemHeightPx = item.height * scaleY;
-    }
+    /* ---- heights ---- */
+    /* Sub-pixel fringe pad: very small — just 2 px extra above/below */
+    var padY = 2;
 
-    /* Tight ascent/descent from canvas metrics when available */
     var tmOld = sOld ? ctx.measureText(sOld) : null;
     var tmNew = sNew ? ctx.measureText(sNew) : null;
 
-    var padYerase = Math.max(fs * 0.08, 2);   /* tiny — only for sub-pixel fringe */
-    var padYdraw  = Math.max(fs * 0.08, 2);
+    /*
+     * Erase ascent/descent must cover the ORIGINAL glyphs fully.
+     * Use actualBoundingBox when the browser provides it (exact).
+     * Fallback: 0.85 * fs above, 0.25 * fs below — covers full em for
+     * standard fonts. Using the larger of old/new so replacement text
+     * is always within the erased region.
+     */
+    var eraseAscent = fs * 0.85 + padY;
+    var eraseDescent = fs * 0.25 + padY;
 
-    /* Ascent above baseline */
-    var eraseAscent = (tmOld && tmOld.actualBoundingBoxAscent != null && isFinite(tmOld.actualBoundingBoxAscent))
-      ? tmOld.actualBoundingBoxAscent + padYerase
-      : (itemHeightPx > 0 ? itemHeightPx * 0.82 : fs * 0.82);
+    if (tmOld && tmOld.actualBoundingBoxAscent != null && isFinite(tmOld.actualBoundingBoxAscent) && tmOld.actualBoundingBoxAscent > 0) {
+      eraseAscent = Math.max(eraseAscent, tmOld.actualBoundingBoxAscent + padY);
+    }
+    if (tmOld && tmOld.actualBoundingBoxDescent != null && isFinite(tmOld.actualBoundingBoxDescent) && tmOld.actualBoundingBoxDescent >= 0) {
+      eraseDescent = Math.max(eraseDescent, tmOld.actualBoundingBoxDescent + padY);
+    }
+    if (tmNew && tmNew.actualBoundingBoxAscent != null && isFinite(tmNew.actualBoundingBoxAscent) && tmNew.actualBoundingBoxAscent > 0) {
+      eraseAscent = Math.max(eraseAscent, tmNew.actualBoundingBoxAscent + padY);
+    }
+    if (tmNew && tmNew.actualBoundingBoxDescent != null && isFinite(tmNew.actualBoundingBoxDescent) && tmNew.actualBoundingBoxDescent >= 0) {
+      eraseDescent = Math.max(eraseDescent, tmNew.actualBoundingBoxDescent + padY);
+    }
 
-    /* Descent below baseline */
-    var eraseDescent = (tmOld && tmOld.actualBoundingBoxDescent != null && isFinite(tmOld.actualBoundingBoxDescent))
-      ? tmOld.actualBoundingBoxDescent + padYerase
-      : (itemHeightPx > 0 ? itemHeightPx * 0.22 : fs * 0.22);
-
-    /* Draw ascent/descent — must be tall enough for replacement text */
-    var drawAscent = (tmNew && tmNew.actualBoundingBoxAscent != null && isFinite(tmNew.actualBoundingBoxAscent))
-      ? tmNew.actualBoundingBoxAscent + padYdraw
-      : Math.max(eraseAscent, fs * 0.78);
-
-    var drawDescent = (tmNew && tmNew.actualBoundingBoxDescent != null && isFinite(tmNew.actualBoundingBoxDescent))
-      ? tmNew.actualBoundingBoxDescent + padYdraw
-      : Math.max(eraseDescent, fs * 0.20);
-
-    /* Clamp: never taller than ~1.15× font size so we don't spill into neighbours */
-    var maxHalf = fs * 0.58;
-    eraseAscent  = Math.min(eraseAscent,  maxHalf);
-    eraseDescent = Math.min(eraseDescent, maxHalf * 0.45);
-    drawAscent   = Math.min(drawAscent,   maxHalf);
-    drawDescent  = Math.min(drawDescent,  maxHalf * 0.45);
-
-    var eraseBoxH = eraseAscent + eraseDescent + padYerase;
-    var drawBoxH  = drawAscent  + drawDescent  + padYdraw;
-
+    var eraseBoxH = eraseAscent + eraseDescent;
     var axisAligned = Math.abs(angle) < 0.015;
 
     return {
@@ -1120,18 +1106,11 @@
       fontPx: fontPx,
       sNew: sNew,
       padX: padX,
-      /* erase geometry */
       eraseX: tx[4] - padX,
       eraseY: tx[5] - eraseAscent,
       eraseW: eraseW,
       eraseH: eraseBoxH,
       eraseAscent: eraseAscent,
-      /* draw geometry */
-      drawX: tx[4] - padX,
-      drawY: tx[5] - drawAscent,
-      drawW: drawW,
-      drawH: drawBoxH,
-      drawAscent: drawAscent,
       axisAligned: axisAligned
     };
   }
