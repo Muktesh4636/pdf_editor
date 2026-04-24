@@ -547,6 +547,12 @@
   /* overlays: pageNum(1-based) -> Array of {el, dataUrl, x, y, w, h} */
   var overlays      = new Map();
 
+  /* ---- Line-collapse / line-insert state ---- */
+  var lineGroups       = new Map(); // pi -> Map<yKey, {items:[{el,ii}], baselineY, lineH}>
+  var itemShiftPx      = new Map(); // pi -> Map<ii, shiftPx>  neg=up, pos=down (preview px)
+  var pagePreviewScale = new Map(); // pi -> preview viewport scale
+  var insertedLines    = new Map(); // pi -> [{key,previewBaseline,previewX,previewFontPx,...,text}]
+
   function $(id) { return document.getElementById(id); }
 
   /* ---- Server archive (original before edit, edited after export) ---- */
@@ -618,6 +624,7 @@
     edits.forEach(function(m) { total += m.size; });
     overlays.forEach(function(arr) { total += arr.length; });
     itemShiftPx.forEach(function(m) { total += m.size; });
+    insertedLines.forEach(function(arr) { total += arr.length; });
     var badge = $('edit-badge');
     badge.style.display = total > 0 ? 'inline-block' : 'none';
     badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
@@ -675,13 +682,13 @@
   }
 
   function createOverlayEl(pageNum, wrap, dataUrl, x, y, w, h) {
-    var entry = { dataUrl: dataUrl, x: x, y: y, w: w, h: h, el: null };
+    var entry = { dataUrl: dataUrl, x: x, y: y, w: w, h: h, rotation: 0, el: null };
     overlays.get(pageNum).push(entry);
 
     var el = document.createElement('div');
     el.className = 'img-overlay';
     el.style.cssText = 'position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;' +
-      'cursor:move;border:2px dashed rgba(99,102,241,0.7);border-radius:3px;box-sizing:border-box;z-index:30;touch-action:none;';
+      'cursor:move;border:2px dashed rgba(99,102,241,0.7);border-radius:3px;box-sizing:border-box;z-index:30;touch-action:none;transform-origin:center center;';
     entry.el = el;
 
     var inner = document.createElement('img');
@@ -693,31 +700,43 @@
     var del = document.createElement('button');
     del.textContent = '×';
     del.title = 'Remove';
-    del.style.cssText = 'position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;' +
-      'background:#ef4444;color:#fff;border:none;font-size:14px;line-height:1;cursor:pointer;z-index:40;' +
-      'display:flex;align-items:center;justify-content:center;padding:0;';
+    del.style.cssText = 'position:absolute;top:-12px;right:-12px;width:24px;height:24px;border-radius:50%;' +
+      'background:#ef4444;color:#fff;border:none;font-size:15px;line-height:1;cursor:pointer;z-index:60;' +
+      'display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation;';
     del.addEventListener('click', function(e) {
       e.stopPropagation();
       el.parentNode && el.parentNode.removeChild(el);
       var arr = overlays.get(pageNum);
-      if (arr) {
-        var idx = arr.indexOf(entry);
-        if (idx >= 0) arr.splice(idx, 1);
-      }
+      if (arr) { var idx = arr.indexOf(entry); if (idx >= 0) arr.splice(idx, 1); }
       updateBadge();
     });
     el.appendChild(del);
+
+    /* Rotation handle — circle above top-centre, connected by a thin line */
+    var rotLine = document.createElement('div');
+    rotLine.style.cssText = 'position:absolute;top:-32px;left:50%;transform:translateX(-50%);' +
+      'width:2px;height:28px;background:rgba(99,102,241,0.6);pointer-events:none;';
+    el.appendChild(rotLine);
+
+    var rotHandle = document.createElement('div');
+    rotHandle.dataset.rotate = '1';
+    rotHandle.title = 'Rotate';
+    rotHandle.style.cssText = 'position:absolute;top:-46px;left:50%;transform:translateX(-50%);' +
+      'width:20px;height:20px;border-radius:50%;background:#a78bfa;border:2px solid #fff;' +
+      'cursor:grab;z-index:55;touch-action:none;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;';
+    rotHandle.textContent = '↻';
+    el.appendChild(rotHandle);
 
     /* Resize handles — 4 corners */
     ['nw','ne','se','sw'].forEach(function(dir) {
       var rh = document.createElement('div');
       rh.dataset.resize = dir;
-      var css = 'position:absolute;width:12px;height:12px;border-radius:2px;' +
+      var css = 'position:absolute;width:14px;height:14px;border-radius:3px;' +
         'background:#6366f1;border:2px solid #fff;box-sizing:border-box;z-index:50;touch-action:none;';
-      if (dir === 'nw') css += 'top:-6px;left:-6px;cursor:nw-resize;';
-      if (dir === 'ne') css += 'top:-6px;right:-6px;cursor:ne-resize;';
-      if (dir === 'se') css += 'bottom:-6px;right:-6px;cursor:se-resize;';
-      if (dir === 'sw') css += 'bottom:-6px;left:-6px;cursor:sw-resize;';
+      if (dir === 'nw') css += 'top:-7px;left:-7px;cursor:nw-resize;';
+      if (dir === 'ne') css += 'top:-7px;right:-7px;cursor:ne-resize;';
+      if (dir === 'se') css += 'bottom:-7px;right:-7px;cursor:se-resize;';
+      if (dir === 'sw') css += 'bottom:-7px;left:-7px;cursor:sw-resize;';
       rh.style.cssText = css;
       el.appendChild(rh);
     });
@@ -728,30 +747,51 @@
   }
 
   function makeDraggableResizable(el, wrap, entry) {
-    var startX, startY, startL, startT, startW, startH, resizeDir = null, dragging = false;
+    var startX, startY, startL, startT, startW, startH, startAngle;
+    var resizeDir = null, rotating = false, dragging = false;
 
     function getXY(e) {
       if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
       return { x: e.clientX, y: e.clientY };
     }
 
+    /* Centre of the element in page coordinates */
+    function elCenter() {
+      var cx = (entry.x || 0) + (entry.w || 0) / 2;
+      var cy = (entry.y || 0) + (entry.h || 0) / 2;
+      var wrapRect = wrap.getBoundingClientRect();
+      return { cx: wrapRect.left + cx, cy: wrapRect.top + cy };
+    }
+
+    function applyRotation(deg) {
+      entry.rotation = deg;
+      el.style.transform = 'rotate(' + deg + 'deg)';
+    }
+
     function onDown(e) {
       var target = e.target;
-      if (target === el || target.tagName === 'IMG') {
-        /* drag move */
-        resizeDir = null; dragging = true;
+      if (target.dataset && target.dataset.rotate) {
+        /* start rotation */
+        rotating = true; dragging = false; resizeDir = null;
+        var c   = elCenter();
+        var p   = getXY(e);
+        startAngle = Math.atan2(p.y - c.cy, p.x - c.cx) * 180 / Math.PI - (entry.rotation || 0);
+        e.preventDefault(); e.stopPropagation();
+      } else if (target === el || target.tagName === 'IMG') {
+        dragging = true; rotating = false; resizeDir = null;
       } else if (target.dataset && target.dataset.resize) {
-        /* resize */
-        resizeDir = target.dataset.resize; dragging = true;
+        resizeDir = target.dataset.resize; dragging = false; rotating = false;
       } else { return; }
 
-      e.preventDefault(); e.stopPropagation();
-      var p = getXY(e);
-      startX = p.x; startY = p.y;
-      startL = parseInt(el.style.left,  10) || 0;
-      startT = parseInt(el.style.top,   10) || 0;
-      startW = parseInt(el.style.width, 10) || entry.w;
-      startH = parseInt(el.style.height,10) || entry.h;
+      if (!rotating) {
+        e.preventDefault(); e.stopPropagation();
+        var p = getXY(e);
+        startX = p.x; startY = p.y;
+        startL = parseInt(el.style.left,  10) || 0;
+        startT = parseInt(el.style.top,   10) || 0;
+        startW = parseInt(el.style.width, 10) || entry.w;
+        startH = parseInt(el.style.height,10) || entry.h;
+      }
 
       window.addEventListener('mousemove', onMove);
       window.addEventListener('mouseup',   onUp);
@@ -760,36 +800,39 @@
     }
 
     function onMove(e) {
-      if (!dragging) return;
+      if (!dragging && !rotating && !resizeDir) return;
       e.preventDefault();
-      var p   = getXY(e);
+      var p  = getXY(e);
+
+      if (rotating) {
+        var c   = elCenter();
+        var ang = Math.atan2(p.y - c.cy, p.x - c.cx) * 180 / Math.PI - startAngle;
+        applyRotation(ang);
+        return;
+      }
+
       var dx  = p.x - startX;
       var dy  = p.y - startY;
       var MIN = 30;
       if (!resizeDir) {
-        /* move */
         var nx = Math.max(0, Math.min(startL + dx, wrap.offsetWidth  - startW));
         var ny = Math.max(0, Math.min(startT + dy, wrap.offsetHeight - startH));
-        el.style.left = nx + 'px';
-        el.style.top  = ny + 'px';
+        el.style.left = nx + 'px'; el.style.top = ny + 'px';
         entry.x = nx; entry.y = ny;
       } else {
-        /* resize */
         var nw = startW, nh = startH, nl = startL, nt = startT;
         if (resizeDir.indexOf('e') >= 0) nw = Math.max(MIN, startW + dx);
         if (resizeDir.indexOf('s') >= 0) nh = Math.max(MIN, startH + dy);
         if (resizeDir.indexOf('w') >= 0) { nw = Math.max(MIN, startW - dx); nl = startL + (startW - nw); }
         if (resizeDir.indexOf('n') >= 0) { nh = Math.max(MIN, startH - dy); nt = startT + (startH - nh); }
-        el.style.width  = nw + 'px';
-        el.style.height = nh + 'px';
-        el.style.left   = nl + 'px';
-        el.style.top    = nt + 'px';
+        el.style.width  = nw + 'px'; el.style.height = nh + 'px';
+        el.style.left   = nl + 'px'; el.style.top    = nt + 'px';
         entry.w = nw; entry.h = nh; entry.x = nl; entry.y = nt;
       }
     }
 
     function onUp() {
-      dragging = false;
+      dragging = false; rotating = false; resizeDir = null;
       window.removeEventListener('mousemove', onMove);
       window.removeEventListener('mouseup',   onUp);
       window.removeEventListener('touchmove', onMove);
@@ -867,6 +910,7 @@
       lineGroups    = new Map();
       itemShiftPx   = new Map();
       pagePreviewScale = new Map();
+      insertedLines = new Map();
 
       $('file-name').value          = file.name;
       $('btn-dl').disabled          = false;
@@ -1025,7 +1069,7 @@
               });
 
               el.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                if (e.key === 'Enter') { e.preventDefault(); insertLineAfter(el); }
                 if (e.key === 'Escape') {
                   e.preventDefault();
                   el.textContent = el.dataset.orig;
@@ -1194,6 +1238,101 @@
    * This means the user does NOT need to press Enter or click away — just
    * clicking Save & Download is enough.
    */
+  /*
+   * Press Enter in any text field → commit the current line then insert a new
+   * blank editable line below it, pushing all existing lines down by lineH.
+   * Press Enter again to chain another new line. Click elsewhere or Save to finish.
+   */
+  function insertLineAfter(el) {
+    /* Commit current content (blur fires the blur handler → commitEdit) */
+    el.blur();
+
+    var pi         = parseInt(el.dataset.pi, 10);
+    var baselineY  = parseFloat(el.dataset.baselineY);
+    var lineH      = parseFloat(el.dataset.lineH) || (parseFloat(el.style.fontSize) * 1.45);
+    var fontPx     = parseFloat(el.style.fontSize);
+    var leftPx     = parseFloat(el.style.left);
+    var fontFamily = el.style.fontFamily;
+    var fontWeight = el.style.fontWeight;
+    var fontStyle  = el.style.fontStyle;
+
+    /* Push every item BELOW the current baseline down by lineH */
+    var pg = lineGroups.get(pi);
+    if (pg) {
+      pg.forEach(function(grp) {
+        if (grp.baselineY <= baselineY) return;
+        grp.items.forEach(function(x) {
+          x.el.style.top = (parseFloat(x.el.style.top) + lineH) + 'px';
+          if (!itemShiftPx.has(pi)) itemShiftPx.set(pi, new Map());
+          var ps = itemShiftPx.get(pi);
+          ps.set(x.ii, (ps.get(x.ii) || 0) + lineH);
+        });
+      });
+    }
+
+    /* Create the new blank editable div */
+    var newBaselineY = baselineY + lineH;
+    var insertKey    = Date.now();
+    var newEl = document.createElement('div');
+    newEl.className       = 'tx tx-inserted';
+    newEl.contentEditable = 'true';
+    newEl.textContent     = '';
+    newEl.dataset.pi          = String(pi);
+    newEl.dataset.ii          = String(-insertKey);
+    newEl.dataset.orig        = '';
+    newEl.dataset.baselineY   = String(newBaselineY);
+    newEl.dataset.lineH       = String(lineH);
+    newEl.dataset.insertedKey = String(insertKey);
+    newEl.style.left       = leftPx + 'px';
+    newEl.style.top        = (newBaselineY - fontPx) + 'px';
+    newEl.style.fontSize   = fontPx + 'px';
+    newEl.style.fontFamily = fontFamily;
+    newEl.style.fontWeight = fontWeight;
+    newEl.style.fontStyle  = fontStyle;
+
+    /* Store for export */
+    if (!insertedLines.has(pi)) insertedLines.set(pi, []);
+    var rec = {
+      key: insertKey, previewBaseline: newBaselineY, previewX: leftPx,
+      previewFontPx: fontPx, fontFamily: fontFamily,
+      fontWeight: fontWeight, fontStyle: fontStyle, text: ''
+    };
+    insertedLines.get(pi).push(rec);
+
+    /* Register in lineGroups so further Enter/Delete operations see it */
+    if (!lineGroups.has(pi)) lineGroups.set(pi, new Map());
+    var yKey = Math.round(newBaselineY / 2) * 2;
+    var pgg  = lineGroups.get(pi);
+    if (!pgg.has(yKey)) pgg.set(yKey, {items:[], baselineY: newBaselineY, lineH: lineH});
+    pgg.get(yKey).items.push({el: newEl, ii: -insertKey});
+
+    newEl.addEventListener('blur', function() {
+      rec.text = newEl.textContent;
+      updateBadge();
+    });
+    newEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter')  { e.preventDefault(); insertLineAfter(newEl); }
+      if (e.key === 'Escape') { e.preventDefault(); newEl.textContent = ''; newEl.blur(); }
+    });
+
+    var layer = el.closest('.text-layer');
+    if (layer) layer.appendChild(newEl);
+
+    setTimeout(function() {
+      newEl.focus();
+      try {
+        var range = document.createRange();
+        range.selectNodeContents(newEl);
+        range.collapse(false);
+        var sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch(e2) {}
+    }, 0);
+
+    updateBadge();
+  }
+
   function flushAllEdits() {
     /* First, blur the currently-focused element (fires its blur handler). */
     var active = document.activeElement;
@@ -1204,7 +1343,19 @@
     var txEls = document.querySelectorAll('.tx');
     for (var i = 0; i < txEls.length; i++) {
       var el = txEls[i];
-      if (el === active) continue; /* already handled above */
+      if (el === active) continue;
+      /* Inserted-line element: update its record directly */
+      if (el.dataset.insertedKey) {
+        var ik  = parseInt(el.dataset.insertedKey, 10);
+        var pip = parseInt(el.dataset.pi, 10);
+        var pil = insertedLines.get(pip);
+        if (pil) {
+          var recEl = null;
+          for (var j = 0; j < pil.length; j++) { if (pil[j].key === ik) { recEl = pil[j]; break; } }
+          if (recEl) recEl.text = el.textContent;
+        }
+        continue;
+      }
       var pi  = parseInt(el.dataset.pi, 10);
       var ii  = parseInt(el.dataset.ii, 10);
       var val = el.textContent;
@@ -1451,51 +1602,47 @@
    * Replace PDF text on export canvas: sample ink, wipe all edited regions, then draw all new text.
    * (Single-pass erase+draw per item made later white rects erase earlier lines? merged/clipped text.)
    */
-  function applyExportTextReplacements(ctx, viewport, textContent, pageEdits, pageShifts, prevScale) {
+  function applyExportTextReplacements(ctx, viewport, textContent, pageEdits, pageShifts, prevScale, pi) {
     var exportScale = Math.sqrt(viewport.transform[0] * viewport.transform[0] +
                                 viewport.transform[1] * viewport.transform[1]);
     var scaleRatio  = prevScale > 0 ? (exportScale / prevScale) : 1;
 
-    /* ---- Phase 0: move pixels for items that shifted but were NOT edited ---- *
-     * We copy the pixel-band from the original canvas position to the shifted
-     * position, then fill the original with white. This makes unedited-but-
-     * shifted lines appear at their new y in the exported PDF.
-     * Process bottom-to-top so moved pixels don't stomp each other.
-     */
+    /* ---- Phase 0: move pixels for items that shifted but were NOT edited ---- */
     if (pageShifts && pageShifts.size > 0) {
-      /* Gather items that have a shift but NO edit (i.e. their text is unchanged) */
+      ctx.save();
+      ctx.font = '10px Arial'; /* set font for measureText width estimates below */
       var shiftOnlyOps = [];
       pageShifts.forEach(function(shiftPreviewPx, ii) {
-        if (pageEdits && pageEdits.has(ii)) return; /* handled as an edit below */
+        if (pageEdits && pageEdits.has(ii)) return; /* will be handled in edit phases */
         var item = textContent.items[ii];
         if (!item) return;
         var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
         var fs = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
         if (fs < 0.5) return;
-
-        var shiftExportPx = shiftPreviewPx * scaleRatio; /* negative = up */
+        var dy = Math.round(shiftPreviewPx * scaleRatio);
+        if (dy === 0) return;
         var padX = Math.max(fs * 0.15, 4);
         var wPdf = (typeof item.width === 'number' && item.width > 0)
           ? Math.hypot(tx[0]*item.width, tx[1]*item.width) : 0;
+        ctx.font = Math.round(fs) + 'px Arial, Helvetica, sans-serif';
         var w = Math.max(ctx.measureText(item.str || '').width, wPdf,
                          (item.str||'').length * fs * 0.62) * 1.1 + padX * 2;
         var ascent  = fs * 0.85 + 2;
         var descent = fs * 0.25 + 2;
-
         shiftOnlyOps.push({
           srcX: Math.round(tx[4] - padX),
           srcY: Math.round(tx[5] - ascent),
           w:    Math.round(w),
           h:    Math.round(ascent + descent),
-          dy:   Math.round(shiftExportPx)
+          dy:   dy
         });
       });
 
-      /* Sort bottom-to-top (largest srcY first) to avoid overwriting sources */
-      shiftOnlyOps.sort(function(a, b) { return b.srcY - a.srcY; });
+      /* Sort correctly: upward (dy<0) process bottom-to-top; downward (dy>0) top-to-bottom */
+      var upOps   = shiftOnlyOps.filter(function(o) { return o.dy < 0; }).sort(function(a,b){ return b.srcY - a.srcY; });
+      var downOps = shiftOnlyOps.filter(function(o) { return o.dy > 0; }).sort(function(a,b){ return a.srcY - b.srcY; });
 
-      ctx.save();
-      shiftOnlyOps.forEach(function(op) {
+      upOps.concat(downOps).forEach(function(op) {
         var cw = ctx.canvas.width, ch = ctx.canvas.height;
         var sx = Math.max(0, op.srcX), sy = Math.max(0, op.srcY);
         var sw = Math.min(op.w, cw - sx), sh = Math.min(op.h, ch - sy);
@@ -1503,17 +1650,15 @@
         try {
           var imgData = ctx.getImageData(sx, sy, sw, sh);
           var dstY = sy + op.dy;
-          if (dstY >= 0 && dstY + sh <= ch) {
-            ctx.putImageData(imgData, sx, dstY);
-          }
+          if (dstY >= 0 && dstY + sh <= ch) ctx.putImageData(imgData, sx, dstY);
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(sx, sy, sw, sh);
-        } catch(e) { /* cross-origin guard */ }
+        } catch(e) {}
       });
       ctx.restore();
     }
 
-    /* ---- Phase 1-3: sample ink / erase / draw for all edited items ---- */
+    /* ---- Phases 1-3: sample ink / erase / draw all edited items ---- */
     var layouts = [];
     pageEdits && pageEdits.forEach(function(newText, itemIdx) {
       var item = textContent.items[itemIdx];
@@ -1521,20 +1666,33 @@
       var L = buildExportTextLayout(ctx, viewport, item, newText);
       if (!L) return;
       L.ink = sampleExportTextInk(ctx, item, L);
-
-      /* Apply y-shift if this item was also shifted */
       if (pageShifts && pageShifts.has(itemIdx)) {
-        var shiftExPx = pageShifts.get(itemIdx) * scaleRatio;
-        L.eraseY     += shiftExPx;
-        L.tx          = L.tx.slice(); /* don't mutate shared reference */
-        L.tx[5]      += shiftExPx;
+        var dy2 = pageShifts.get(itemIdx) * scaleRatio;
+        L.eraseY += dy2;
+        L.tx      = L.tx.slice();
+        L.tx[5]  += dy2;
       }
-
       layouts.push(L);
     });
     var i;
     for (i = 0; i < layouts.length; i++) eraseExportTextLayout(ctx, layouts[i]);
     for (i = 0; i < layouts.length; i++) drawExportTextLayout(ctx, layouts[i], layouts[i].ink);
+
+    /* ---- Phase 4: draw inserted lines ---- */
+    var pageInserted = insertedLines.get(pi);
+    if (pageInserted && pageInserted.length > 0) {
+      pageInserted.forEach(function(rec) {
+        var text = rec.text ? rec.text.trim() : '';
+        if (!text) return;
+        var expBaseline = rec.previewBaseline * scaleRatio;
+        var expX        = rec.previewX        * scaleRatio;
+        var expFontPx   = Math.max(1, Math.round(rec.previewFontPx * scaleRatio));
+        ctx.font         = expFontPx + 'px ' + (rec.fontFamily || 'Arial, Helvetica, sans-serif');
+        ctx.textBaseline = 'alphabetic';
+        ctx.fillStyle    = '#000000';
+        ctx.fillText(text, expX, expBaseline);
+      });
+    }
   }
 
   /* ---- Save & Download (canvas-based export) ---- */
@@ -1545,6 +1703,7 @@
       edits.forEach(function(m) { total += m.size; });
       overlays.forEach(function(arr) { total += arr.length; });
       itemShiftPx.forEach(function(m) { total += m.size; });
+      insertedLines.forEach(function(arr) { total += arr.length; });
       if (total === 0) { toast('Make an edit first.', 'info'); return; }
 
       showLoading('Exporting...');
@@ -1583,10 +1742,11 @@
                 var prevScale  = pagePreviewScale.get(pageNum - 1) || 1;
                 var hasEdits   = pageEdits && pageEdits.size > 0;
                 var hasShifts  = pageShifts && pageShifts.size > 0;
-                if (hasEdits || hasShifts) {
+                var hasInserts = insertedLines.has(pageNum - 1) && insertedLines.get(pageNum - 1).length > 0;
+                if (hasEdits || hasShifts || hasInserts) {
                   return page.getTextContent().then(function(textContent) {
                     applyExportTextReplacements(ctx, viewport, textContent,
-                      hasEdits ? pageEdits : new Map(), pageShifts, prevScale);
+                      hasEdits ? pageEdits : new Map(), pageShifts, prevScale, pageNum - 1);
                   });
                 }
               }).then(function() {
@@ -1606,12 +1766,16 @@
                   return new Promise(function(resolve) {
                     var img   = new Image();
                     img.onload = function() {
-                      ctx.drawImage(img,
-                        Math.round(ov.x * scaleX),
-                        Math.round(ov.y * scaleY),
-                        Math.round(ov.w * scaleX),
-                        Math.round(ov.h * scaleY)
-                      );
+                      var cx  = Math.round((ov.x + ov.w / 2) * scaleX);
+                      var cy  = Math.round((ov.y + ov.h / 2) * scaleY);
+                      var dw  = Math.round(ov.w * scaleX);
+                      var dh  = Math.round(ov.h * scaleY);
+                      var rad = ((ov.rotation || 0) * Math.PI) / 180;
+                      ctx.save();
+                      ctx.translate(cx, cy);
+                      ctx.rotate(rad);
+                      ctx.drawImage(img, -dw / 2, -dh / 2, dw, dh);
+                      ctx.restore();
                       resolve();
                     };
                     img.onerror = resolve;
@@ -1648,6 +1812,7 @@
         lineGroups   = new Map();
         itemShiftPx  = new Map();
         pagePreviewScale = new Map();
+        insertedLines = new Map();
         /* Remove overlay elements from DOM */
         document.querySelectorAll('.img-overlay').forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
         toast('Saved! Downloading...', 'success');
