@@ -1034,6 +1034,10 @@
 
   /*
    * Export text replacement: geometry for one text item (PDF.js viewport space).
+   *
+   * Erase box is intentionally TIGHT — only just covering the original glyph
+   * pixels so neighbouring lines (above/below) are not wiped.
+   * Draw box uses the measured new-text width so the replacement fits.
    */
   function buildExportTextLayout(ctx, viewport, item, newText) {
     var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
@@ -1047,35 +1051,66 @@
 
     var sOld = item.str || '';
     var sNew = newText ? String(newText).trim() : '';
-    var measureStr = sNew || sOld || 'Mg';
 
+    /* ---- widths ---- */
     var wOld = ctx.measureText(sOld).width;
     var wNew = sNew ? ctx.measureText(sNew).width : 0;
     var wPdf = 0;
     if (typeof item.width === 'number' && item.width > 0) {
       wPdf = Math.hypot(tx[0] * item.width, tx[1] * item.width);
     }
-    var glyphGuess = Math.max(sOld.length, sNew.length || 1, 3) * fs * 0.62;
+    var glyphGuessOld = Math.max(sOld.length, 1) * fs * 0.62;
+    var glyphGuessNew = Math.max((sNew || '').length, 1) * fs * 0.62;
 
-    var padX = Math.max(fs * 0.5, 10);
-    var padY = Math.max(fs * 0.35, 8);
-    var boxW = Math.max(wOld, wNew, wPdf, glyphGuess) * 1.12 + padX * 2;
+    /* eraseW covers the original text; drawW covers the replacement */
+    var padX = Math.max(fs * 0.15, 3);
+    var eraseW = Math.max(wOld, wPdf, glyphGuessOld) * 1.08 + padX * 2;
+    var drawW  = Math.max(wNew, glyphGuessNew) * 1.08 + padX * 2;
 
-    var tm = ctx.measureText(measureStr);
-    var ascent = fs * 1.25;
-    var descent = fs * 0.45;
-    if (tm.actualBoundingBoxAscent != null && isFinite(tm.actualBoundingBoxAscent)) {
-      ascent = Math.max(ascent, tm.actualBoundingBoxAscent + padY * 0.35);
+    /* ---- heights: use PDF.js item.height if available (most reliable) ---- */
+    var itemHeightPx = 0;
+    if (typeof item.height === 'number' && item.height > 0) {
+      /* item.height is in PDF user-space units; scale matches fs derivation */
+      var scaleY = Math.abs(viewport.transform[3]) || (fs / Math.max(item.height, 0.01));
+      itemHeightPx = item.height * scaleY;
     }
-    if (tm.actualBoundingBoxDescent != null && isFinite(tm.actualBoundingBoxDescent)) {
-      descent = Math.max(descent, tm.actualBoundingBoxDescent + padY * 0.35);
-    }
-    ascent = Math.max(ascent, fs * 0.95);
-    descent = Math.max(descent, fs * 0.38);
 
-    var boxH = ascent + descent + padY;
-    var sx = tx[4] - padX;
-    var sy = tx[5] - ascent - padY * 0.5;
+    /* Tight ascent/descent from canvas metrics when available */
+    var tmOld = sOld ? ctx.measureText(sOld) : null;
+    var tmNew = sNew ? ctx.measureText(sNew) : null;
+
+    var padYerase = Math.max(fs * 0.08, 2);   /* tiny — only for sub-pixel fringe */
+    var padYdraw  = Math.max(fs * 0.08, 2);
+
+    /* Ascent above baseline */
+    var eraseAscent = (tmOld && tmOld.actualBoundingBoxAscent != null && isFinite(tmOld.actualBoundingBoxAscent))
+      ? tmOld.actualBoundingBoxAscent + padYerase
+      : (itemHeightPx > 0 ? itemHeightPx * 0.82 : fs * 0.82);
+
+    /* Descent below baseline */
+    var eraseDescent = (tmOld && tmOld.actualBoundingBoxDescent != null && isFinite(tmOld.actualBoundingBoxDescent))
+      ? tmOld.actualBoundingBoxDescent + padYerase
+      : (itemHeightPx > 0 ? itemHeightPx * 0.22 : fs * 0.22);
+
+    /* Draw ascent/descent — must be tall enough for replacement text */
+    var drawAscent = (tmNew && tmNew.actualBoundingBoxAscent != null && isFinite(tmNew.actualBoundingBoxAscent))
+      ? tmNew.actualBoundingBoxAscent + padYdraw
+      : Math.max(eraseAscent, fs * 0.78);
+
+    var drawDescent = (tmNew && tmNew.actualBoundingBoxDescent != null && isFinite(tmNew.actualBoundingBoxDescent))
+      ? tmNew.actualBoundingBoxDescent + padYdraw
+      : Math.max(eraseDescent, fs * 0.20);
+
+    /* Clamp: never taller than ~1.15× font size so we don't spill into neighbours */
+    var maxHalf = fs * 0.58;
+    eraseAscent  = Math.min(eraseAscent,  maxHalf);
+    eraseDescent = Math.min(eraseDescent, maxHalf * 0.45);
+    drawAscent   = Math.min(drawAscent,   maxHalf);
+    drawDescent  = Math.min(drawDescent,  maxHalf * 0.45);
+
+    var eraseBoxH = eraseAscent + eraseDescent + padYerase;
+    var drawBoxH  = drawAscent  + drawDescent  + padYdraw;
+
     var axisAligned = Math.abs(angle) < 0.015;
 
     return {
@@ -1085,12 +1120,18 @@
       fontPx: fontPx,
       sNew: sNew,
       padX: padX,
-      padY: padY,
-      ascent: ascent,
-      sx: sx,
-      sy: sy,
-      boxW: boxW,
-      boxH: boxH,
+      /* erase geometry */
+      eraseX: tx[4] - padX,
+      eraseY: tx[5] - eraseAscent,
+      eraseW: eraseW,
+      eraseH: eraseBoxH,
+      eraseAscent: eraseAscent,
+      /* draw geometry */
+      drawX: tx[4] - padX,
+      drawY: tx[5] - drawAscent,
+      drawW: drawW,
+      drawH: drawBoxH,
+      drawAscent: drawAscent,
       axisAligned: axisAligned
     };
   }
@@ -1099,21 +1140,21 @@
     var ink = cssColorFromPdfItem(item);
     if (ink) return ink;
     if (L.axisAligned) {
-      return sampleInkColorPrecise(ctx, L.sx, L.sy, L.boxW, L.boxH);
+      return sampleInkColorPrecise(ctx, L.eraseX, L.eraseY, L.eraseW, L.eraseH);
     }
-    var span = Math.sqrt(L.boxW * L.boxW + L.boxH * L.boxH) + L.fs;
+    var span = Math.sqrt(L.eraseW * L.eraseW + L.eraseH * L.eraseH) + L.fs;
     return sampleInkColorPrecise(ctx, L.tx[4] - span, L.tx[5] - span, span * 2, span * 2);
   }
 
   function eraseExportTextLayout(ctx, L) {
     ctx.fillStyle = '#ffffff';
     if (L.axisAligned) {
-      ctx.fillRect(L.sx, L.sy, L.boxW, L.boxH);
+      ctx.fillRect(L.eraseX, L.eraseY, L.eraseW, L.eraseH);
     } else {
       ctx.save();
       ctx.translate(L.tx[4], L.tx[5]);
       ctx.rotate(L.angle);
-      ctx.fillRect(-L.padX, -L.ascent - L.padY * 0.5, L.boxW, L.boxH);
+      ctx.fillRect(-L.padX, -L.eraseAscent, L.eraseW, L.eraseH);
       ctx.restore();
     }
   }
