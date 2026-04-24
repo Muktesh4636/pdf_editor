@@ -2,3 +2,7 @@
 *.log
 data/
 server/node_modules/
+*.pdf
+*.png
+*.jpg
+*.jpeg
