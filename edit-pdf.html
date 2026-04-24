@@ -10,7 +10,7 @@
   <meta name="description" content="Edit PDF online for free with PDF Editor. Upload a PDF, click any text to edit it, rename the file and download. Editing runs in your browser; copies may be archived on our server." />
   <meta name="keywords" content="pdf edit, edit pdf, pdf editor online, edit pdf text, free pdf editor, pdf editor no signup, change text in pdf, edit pdf online, pdf text editor, pdf editor, pravoo pdf editor" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
-  <meta name="author" content="PDF Editor &#8212; pdf.pravoo.in" />
+  <meta name="author" content="PDF Forge" />
   <meta name="revisit-after" content="3 days" />
   <meta name="rating" content="general" />
   <meta name="language" content="English" />
@@ -54,7 +54,7 @@
   {
     "@context": "https://schema.org",
     "@type": "WebApplication",
-    "name": "PDF Editor",
+    "name": "PDF Forge",
     "alternateName": ["PDF Edit Online", "Free PDF Editor", "Edit PDF Text Online"],
     "url": "https://pdf.pravoo.in/",
     "logo": "https://pdf.pravoo.in/icon-512.png",
@@ -89,7 +89,7 @@
       {
         "@type": "Question",
         "name": "How do I edit a PDF online for free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Go to pdf.pravoo.in, drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Click Save & Download — no need to press Enter." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Go to PDF Forge (pdf.pravoo.in), drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Click Save & Download — no need to press Enter." }
       },
       {
         "@type": "Question",
@@ -123,9 +123,9 @@
     "name": "How to edit a PDF online for free",
     "description": "Step-by-step guide to editing PDF text online using PDF Editor at pdf.pravoo.in.",
     "totalTime": "PT2M",
-    "tool": { "@type": "HowToTool", "name": "PDF Editor (pdf.pravoo.in)" },
+    "tool": { "@type": "HowToTool", "name": "PDF Forge" },
     "step": [
-      { "@type": "HowToStep", "position": 1, "name": "Upload your PDF", "text": "Go to pdf.pravoo.in and drag-and-drop your PDF, or click Choose PDF File to browse." },
+      { "@type": "HowToStep", "position": 1, "name": "Upload your PDF", "text": "Go to PDF Forge (pdf.pravoo.in) and drag-and-drop your PDF, or click Choose PDF File to browse." },
       { "@type": "HowToStep", "position": 2, "name": "Click on text to edit", "text": "Hover over any text in the PDF. Click it to open an editable field and type your changes." },
       { "@type": "HowToStep", "position": 3, "name": "Click Save & Download", "text": "Click Save & Download — your changes are applied automatically, no need to press Enter first." },
       { "@type": "HowToStep", "position": 4, "name": "Download the edited PDF", "text": "Click Save & Download in the toolbar. Your edited PDF is downloaded automatically." }
@@ -387,8 +387,8 @@
       }
       .filename-input { width: 100%; max-width: none; font-size: 0.85rem; }
       .edit-badge { order: 4; }
-      #btn-dl, #btn-save-dl {
-        flex: 1 1 calc(50% - 0.35rem);
+      #btn-save-dl {
+        flex: 1 1 auto;
         min-width: 0;
         font-size: 0.8rem;
         padding: 0.5rem 0.5rem;
@@ -400,7 +400,7 @@
     }
 
     @media (min-width: 641px) { .page-label { margin-bottom: -2rem; } }
-    @media (max-width: 400px) { #btn-dl, #btn-save-dl { font-size: 0.74rem; } }
+    @media (max-width: 400px) { #btn-save-dl { font-size: 0.74rem; } }
 
     @media (hover: none) and (pointer: coarse) {
       .tx { min-height: 1.6em; min-width: 1em; padding: 3px 4px; }
@@ -413,7 +413,7 @@
 
 <nav>
   <div class="nav-inner">
-    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <a class="logo" href="/"><span>PDF</span> Forge</a>
     <span class="breadcrumb">/ <a href="/">Tools</a> / Edit PDF</span>
   </div>
 </nav>
@@ -442,7 +442,7 @@
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
         How do I edit a PDF online for free? <span class="faq-arrow">&#9660;</span>
       </button>
-      <div class="faq-a">Go to pdf.pravoo.in, upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Click Save &amp; Download when done — no need to press Enter.</div>
+      <div class="faq-a">Go to PDF Forge (pdf.pravoo.in), upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Click Save &amp; Download when done — no need to press Enter.</div>
     </div>
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
@@ -468,8 +468,7 @@
 <!-- Editor Screen -->
 <div id="editor-screen">
   <div class="toolbar">
-    <button class="tbtn tbtn-dl" id="btn-dl" onclick="downloadPdf()" disabled>&#8595; Download</button>
-    <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" style="display:none">&#128190; Save &amp; Download</button>
+    <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" disabled>&#128190; Save &amp; Download</button>
     <button class="tbtn tbtn-stamp" id="btn-stamp" onclick="triggerStampUpload()" title="Add signature, stamp, or image">&#9998; Stamp / Sign</button>
     <input type="file" id="stamp-input" accept="image/*" style="display:none" />
     <div class="toolbar-spacer"></div>
@@ -480,8 +479,7 @@
   </div>
   <div class="hint-bar">
     <span class="hint-dot"></span>
-    Click any text to edit &nbsp;&mdash;&nbsp; Click <strong>Save &amp; Download</strong> when done &nbsp;&mdash;&nbsp;
-    Use <strong>Save &amp; Download</strong> to export with your changes
+    Click any text to edit &nbsp;&mdash;&nbsp; Click <strong>Save &amp; Download</strong> when done
   </div>
   <div class="pages-area" id="pages-area"></div>
 </div>
@@ -586,7 +584,6 @@
     var badge = $('edit-badge');
     badge.style.display = total > 0 ? 'inline-block' : 'none';
     badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
-    $('btn-save-dl').style.display = total > 0 ? 'inline-flex' : 'none';
   }
 
   /* ---- Stamp / Signature overlay ---- */
@@ -871,9 +868,8 @@
       insertedLines = new Map();
 
       $('file-name').value          = file.name;
-      $('btn-dl').disabled          = false;
+      $('btn-save-dl').disabled     = false;
       $('edit-badge').style.display = 'none';
-      $('btn-save-dl').style.display = 'none';
 
       return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
     }).then(function(doc) {
@@ -1763,7 +1759,6 @@
       }).then(function(bytes) {
         savedBytes = bytes;
         hideLoading();
-        $('btn-save-dl').style.display = 'none';
         $('edit-badge').style.display  = 'none';
         edits    = new Map();
         overlays = new Map();
@@ -1820,6 +1815,6 @@
   function isBold(name)   { return /bold|black|heavy|semibold/i.test(name); }
   function isItalic(name) { return /italic|oblique/i.test(name); }
 </script>
-<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">pdf.pravoo.in</a> — Free PDF tools. No signup. No limits.</p></footer>
+<footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdf.pravoo.in/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
 </body>
 </html>
