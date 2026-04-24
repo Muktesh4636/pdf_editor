@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Remove Pages from PDF Free — Delete PDF Pages | pdf.pravoo.in</title>
+<meta name="description" content="Remove pages from a PDF online for free. Preview all pages, select which to delete, download the result."/>
+<link rel="canonical" href="https://pdf.pravoo.in/remove-pages.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}.breadcrumb a{color:var(--muted);text-decoration:none}
+main{max-width:1100px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;background:#fff;transition:border-color .2s,background .2s}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}
+.toolbar{display:none;align-items:center;gap:14px;flex-wrap:wrap;margin-top:28px;padding:14px 18px;background:#fff;border:1px solid var(--border);border-radius:var(--radius)}
+.toolbar-info{flex:1;font-size:.9rem;color:var(--muted)}
+.toolbar-info b{color:var(--text)}
+.btn-action{border:none;border-radius:8px;padding:9px 18px;font-size:.88rem;font-weight:700;cursor:pointer}
+.btn-del{background:#fee2e2;color:#991b1b}.btn-del:hover{background:#fecaca}
+.btn-del:disabled{background:#e5e7eb;color:#9ca3af;cursor:not-allowed}
+.btn-selall{background:#e8f0ff;color:#1d4ed8}.btn-selall:hover{background:#dbeafe}
+.btn-save{background:var(--primary);color:#fff}.btn-save:hover{background:#c92b2b}
+.btn-save:disabled{background:#ccc;cursor:not-allowed}
+.pages-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;margin-top:20px}
+.page-thumb{border:2.5px solid var(--border);border-radius:10px;overflow:hidden;cursor:pointer;position:relative;transition:border-color .15s;background:#fff}
+.page-thumb:hover{border-color:#94a3b8}
+.page-thumb.selected{border-color:var(--primary);background:#fff5f5}
+.page-thumb.selected::after{content:'✓';position:absolute;top:6px;right:6px;background:var(--primary);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:900}
+.thumb-canvas{width:100%;display:block}
+.page-num{text-align:center;padding:6px;font-size:.75rem;font-weight:600;color:var(--muted)}
+.page-num.del-label{color:var(--primary);font-weight:700}
+.progress{display:none;margin-top:14px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .3s}
+#status{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / Remove Pages</span>
+  </div>
+</nav>
+<main>
+  <h1>✂️ Remove Pages</h1>
+  <p class="sub">Upload a PDF, click pages to mark them for deletion, then download the trimmed file.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a PDF file here</h2>
+    <p>Or click to choose a file</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
+
+  <div class="toolbar" id="toolbar">
+    <div class="toolbar-info" id="toolbar-info"></div>
+    <button class="btn-action btn-selall" id="btn-selall">Select All</button>
+    <button class="btn-action btn-del" id="btn-del" disabled>🗑 Remove Selected</button>
+    <button class="btn-action btn-save" id="btn-save" disabled>⬇ Save PDF</button>
+  </div>
+  <div class="pages-grid" id="pages-grid"></div>
+  <div class="progress" id="progress"><div class="progress-bar" id="pbar"></div></div>
+  <div id="status"></div>
+</main>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var originalBuf=null, pdfJsDoc=null, selected=new Set(), deleted=new Set(), totalPages=0;
+
+var dropZone=document.getElementById('drop-zone');
+var fileInput=document.getElementById('file-input');
+dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
+dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');loadFile(e.dataTransfer.files[0]);});
+dropZone.addEventListener('click',function(){fileInput.click();});
+fileInput.addEventListener('change',function(){loadFile(fileInput.files[0]);fileInput.value='';});
+
+async function loadFile(f){
+  if(!f||(!f.name.match(/\.pdf$/i)&&f.type!=='application/pdf')) return;
+  selected.clear(); deleted.clear(); document.getElementById('pages-grid').innerHTML='';
+  showStatus('Loading...','');
+  var buf=await f.arrayBuffer();
+  originalBuf=new Uint8Array(buf);
+  pdfJsDoc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+  totalPages=pdfJsDoc.numPages;
+  document.getElementById('toolbar').style.display='flex';
+  updateToolbar();
+  var grid=document.getElementById('pages-grid');
+  grid.innerHTML='';
+  for(var i=1;i<=totalPages;i++){
+    var thumb=document.createElement('div');
+    thumb.className='page-thumb'; thumb.dataset.page=i;
+    var canvas=document.createElement('canvas'); canvas.className='thumb-canvas';
+    var lbl=document.createElement('div'); lbl.className='page-num'; lbl.textContent='Page '+i;
+    thumb.appendChild(canvas); thumb.appendChild(lbl);
+    grid.appendChild(thumb);
+    (function(pageNum,cnv,l,t){
+      pdfJsDoc.getPage(pageNum).then(function(page){
+        var vp=page.getViewport({scale:0.5});
+        cnv.width=Math.round(vp.width); cnv.height=Math.round(vp.height);
+        cnv.style.width='100%';
+        page.render({canvasContext:cnv.getContext('2d'),viewport:vp});
+      });
+      t.addEventListener('click',function(){
+        if(deleted.has(pageNum)) return;
+        if(selected.has(pageNum)){selected.delete(pageNum);t.classList.remove('selected');l.classList.remove('del-label');l.textContent='Page '+pageNum;}
+        else{selected.add(pageNum);t.classList.add('selected');l.classList.add('del-label');l.textContent='Remove';}
+        updateToolbar();
+      });
+    })(i,canvas,lbl,thumb);
+  }
+  showStatus('','');
+}
+
+function updateToolbar(){
+  var remaining=totalPages-deleted.size;
+  document.getElementById('toolbar-info').innerHTML='<b>'+totalPages+'</b> pages · <b>'+deleted.size+'</b> removed · <b>'+selected.size+'</b> selected';
+  document.getElementById('btn-del').disabled=selected.size===0||selected.size>=remaining;
+  document.getElementById('btn-save').disabled=deleted.size===0;
+}
+
+document.getElementById('btn-selall').addEventListener('click',function(){
+  for(var i=1;i<=totalPages;i++){
+    if(!deleted.has(i)){
+      selected.add(i);
+      var t=document.querySelector('.page-thumb[data-page="'+i+'"]');
+      if(t){t.classList.add('selected');t.querySelector('.page-num').classList.add('del-label');t.querySelector('.page-num').textContent='Remove';}
+    }
+  }
+  updateToolbar();
+});
+
+document.getElementById('btn-del').addEventListener('click',function(){
+  if(selected.size===0) return;
+  var remaining=totalPages-deleted.size;
+  if(selected.size>=remaining){showStatus('You cannot remove all pages.','err');return;}
+  selected.forEach(function(p){
+    deleted.add(p);
+    var t=document.querySelector('.page-thumb[data-page="'+p+'"]');
+    if(t){t.style.opacity='0.35';t.style.pointerEvents='none';t.classList.remove('selected');t.querySelector('.page-num').textContent='Removed';t.querySelector('.page-num').style.color='#9ca3af';}
+  });
+  selected.clear();
+  updateToolbar();
+  showStatus('','');
+});
+
+document.getElementById('btn-save').addEventListener('click',async function(){
+  if(deleted.size===0){showStatus('No pages selected for removal.','err');return;}
+  var btn=this; btn.disabled=true; btn.textContent='Saving...';
+  var prog=document.getElementById('progress'),pbar=document.getElementById('pbar');
+  prog.style.display='block'; pbar.style.width='10%';
+  try{
+    var src=await PDFLib.PDFDocument.load(originalBuf);
+    var out=await PDFLib.PDFDocument.create();
+    var keep=[];
+    for(var i=0;i<totalPages;i++){if(!deleted.has(i+1)) keep.push(i);}
+    var pages=await out.copyPages(src,keep);
+    pages.forEach(function(p){out.addPage(p);});
+    pbar.style.width='80%';
+    var bytes=await out.save();
+    pbar.style.width='100%';
+    var blob=new Blob([bytes],{type:'application/pdf'});
+    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='trimmed.pdf';a.click();
+    showStatus('✅ Saved! '+deleted.size+' page(s) removed. Download started.','ok');
+  }catch(e){showStatus('Error: '+e.message,'err');}
+  btn.disabled=false; btn.textContent='⬇ Save PDF';
+  setTimeout(function(){prog.style.display='none';pbar.style.width='0%';},1500);
+  updateToolbar();
+});
+
+function showStatus(msg,type){
+  var s=document.getElementById('status');
+  if(!msg){s.style.display='none';return;}
+  s.textContent=msg; s.className=type==='ok'?'status-ok':'status-err'; s.style.display='block';
+}
+</script>
+</body>
+</html>

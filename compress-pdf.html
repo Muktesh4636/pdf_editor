@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Compress PDF Free Online — Reduce PDF Size | pdf.pravoo.in</title>
+<meta name="description" content="Compress and reduce PDF file size online for free. Choose quality level and download."/>
+<link rel="canonical" href="https://pdf.pravoo.in/compress-pdf.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:700px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}.breadcrumb a{color:var(--muted);text-decoration:none}
+main{max-width:700px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}
+.settings{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-top:24px;display:none}
+.settings h3{font-size:1rem;font-weight:700;margin-bottom:16px}
+.quality-opts{display:flex;gap:10px;flex-wrap:wrap}
+.q-opt{flex:1;min-width:120px;border:2px solid var(--border);border-radius:10px;padding:14px;cursor:pointer;text-align:center;transition:border-color .15s,background .15s}
+.q-opt:hover{border-color:var(--primary)}
+.q-opt.active{border-color:var(--primary);background:#fff5f5}
+.q-name{font-weight:700;font-size:.95rem;margin-bottom:4px}
+.q-desc{color:var(--muted);font-size:.78rem}
+.file-info{background:#f7f8fc;border:1px solid var(--border);border-radius:10px;padding:14px 16px;margin-top:20px;display:flex;align-items:center;gap:12px}
+.file-icon{font-size:1.5rem}
+.file-name{font-weight:600;font-size:.9rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-size{color:var(--muted);font-size:.82rem}
+.btn-compress{display:block;width:100%;margin-top:20px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:14px;font-size:1.05rem;font-weight:800;cursor:pointer}
+.btn-compress:hover{background:#c92b2b}
+.btn-compress:disabled{background:#ccc;cursor:not-allowed}
+.progress{display:none;margin-top:14px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .4s}
+#status{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.result-box{background:#fff;border:1px solid #86efac;border-radius:10px;padding:16px;margin-top:16px;display:none}
+.result-row{display:flex;justify-content:space-between;margin-bottom:4px;font-size:.88rem}
+.result-row b{font-weight:700}
+.saving{color:#16a34a;font-weight:700;font-size:1rem;margin-top:8px}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / Compress PDF</span>
+  </div>
+</nav>
+<main>
+  <h1>🗜️ Compress PDF</h1>
+  <p class="sub">Reduce PDF file size by rasterising pages at a lower resolution. Works in your browser.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a PDF file here</h2>
+    <p>Or click to choose a file</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
+
+  <div class="settings" id="settings">
+    <h3>Compression Quality</h3>
+    <div class="quality-opts">
+      <div class="q-opt" data-q="0.92" data-dpi="150">
+        <div class="q-name">🔵 High</div>
+        <div class="q-desc">Good quality, modest size reduction (~30–50%)</div>
+      </div>
+      <div class="q-opt active" data-q="0.75" data-dpi="110">
+        <div class="q-name">🟡 Medium</div>
+        <div class="q-desc">Balanced — recommended for most files (~50–70%)</div>
+      </div>
+      <div class="q-opt" data-q="0.50" data-dpi="80">
+        <div class="q-name">🔴 Low</div>
+        <div class="q-desc">Small file, lower quality (~70–85% reduction)</div>
+      </div>
+    </div>
+    <div class="file-info" id="file-info"></div>
+    <button class="btn-compress" id="btn-compress">🗜️ Compress PDF</button>
+    <div class="progress" id="progress"><div class="progress-bar" id="pbar"></div></div>
+    <div id="status"></div>
+    <div class="result-box" id="result-box"></div>
+  </div>
+</main>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var currentFile = null;
+var selectedQ = 0.75, selectedDpi = 110;
+
+var dropZone = document.getElementById('drop-zone');
+var fileInput = document.getElementById('file-input');
+
+document.querySelectorAll('.q-opt').forEach(function(opt){
+  opt.addEventListener('click', function(){
+    document.querySelectorAll('.q-opt').forEach(function(o){ o.classList.remove('active'); });
+    opt.classList.add('active');
+    selectedQ   = parseFloat(opt.dataset.q);
+    selectedDpi = parseInt(opt.dataset.dpi);
+  });
+});
+
+dropZone.addEventListener('dragover', function(e){ e.preventDefault(); dropZone.classList.add('over'); });
+dropZone.addEventListener('dragleave', function(){ dropZone.classList.remove('over'); });
+dropZone.addEventListener('drop', function(e){ e.preventDefault(); dropZone.classList.remove('over'); loadFile(e.dataTransfer.files[0]); });
+dropZone.addEventListener('click', function(){ fileInput.click(); });
+fileInput.addEventListener('change', function(){ loadFile(fileInput.files[0]); fileInput.value=''; });
+
+function loadFile(f){
+  if(!f||(!f.name.match(/\.pdf$/i)&&f.type!=='application/pdf')) return;
+  currentFile=f;
+  document.getElementById('settings').style.display='block';
+  document.getElementById('file-info').innerHTML =
+    '<span class="file-icon">📄</span>'
+    +'<span class="file-name">'+escHtml(f.name)+'</span>'
+    +'<span class="file-size">'+fmtSize(f.size)+'</span>';
+  showStatus('','');
+  document.getElementById('result-box').style.display='none';
+}
+
+document.getElementById('btn-compress').addEventListener('click', async function(){
+  if(!currentFile) return;
+  var btn=this; btn.disabled=true; btn.textContent='Compressing...';
+  showStatus('','');
+  document.getElementById('result-box').style.display='none';
+  var prog=document.getElementById('progress'), pbar=document.getElementById('pbar');
+  prog.style.display='block'; pbar.style.width='5%';
+  try{
+    var buf = await currentFile.arrayBuffer();
+    var pdfDoc = await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+    var outDoc = await PDFLib.PDFDocument.create();
+    var scale = selectedDpi / 72;
+    for(var i=1;i<=pdfDoc.numPages;i++){
+      var page = await pdfDoc.getPage(i);
+      var vp   = page.getViewport({scale:scale});
+      var canvas = document.createElement('canvas');
+      canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
+      var ctx=canvas.getContext('2d');
+      await page.render({canvasContext:ctx,viewport:vp}).promise;
+      var dataUrl = canvas.toDataURL('image/jpeg', selectedQ);
+      var b64 = dataUrl.split(',')[1];
+      var imgBytes = Uint8Array.from(atob(b64), function(c){return c.charCodeAt(0);});
+      var img = await outDoc.embedJpg(imgBytes);
+      var base = page.getViewport({scale:1});
+      var oPage = outDoc.addPage([base.width, base.height]);
+      oPage.drawImage(img,{x:0,y:0,width:base.width,height:base.height});
+      pbar.style.width = Math.round((i/pdfDoc.numPages)*90)+'%';
+    }
+    var outBytes = await outDoc.save();
+    pbar.style.width='100%';
+    var saving = Math.round((1 - outBytes.length/currentFile.size)*100);
+    var blob=new Blob([outBytes],{type:'application/pdf'});
+    var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='compressed_'+currentFile.name; a.click();
+    var rb=document.getElementById('result-box');
+    rb.innerHTML='<div class="result-row"><span>Original size:</span><b>'+fmtSize(currentFile.size)+'</b></div>'
+      +'<div class="result-row"><span>Compressed size:</span><b>'+fmtSize(outBytes.length)+'</b></div>'
+      +'<div class="saving">✅ '+(saving>0?saving+'% smaller!':'File size unchanged.')+'</div>';
+    rb.style.display='block';
+  }catch(e){ showStatus('Error: '+e.message,'err'); }
+  btn.disabled=false; btn.textContent='🗜️ Compress PDF';
+  setTimeout(function(){ prog.style.display='none'; pbar.style.width='0%'; },1500);
+});
+
+function showStatus(msg,type){
+  var s=document.getElementById('status');
+  if(!msg){s.style.display='none';return;}
+  s.textContent=msg; s.className=type==='ok'?'status-ok':'status-err'; s.style.display='block';
+}
+function fmtSize(b){ return b>1e6?(b/1e6).toFixed(1)+' MB':Math.round(b/1024)+' KB'; }
+function escHtml(s){ return s.replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+</script>
+</body>
+</html>

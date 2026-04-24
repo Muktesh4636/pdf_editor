@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PDF to Image Free Online — Export PDF Pages as PNG/JPG | pdf.pravoo.in</title>
+<meta name="description" content="Convert PDF pages to high-quality PNG or JPG images online for free. Download all pages as a ZIP."/>
+<link rel="canonical" href="https://pdf.pravoo.in/pdf-to-img.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:1100px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}.breadcrumb a{color:var(--muted);text-decoration:none}
+main{max-width:1100px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:32px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:48px 24px;text-align:center;cursor:pointer;background:#fff;transition:border-color .2s,background .2s}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.5rem;margin-bottom:12px}
+.drop-zone h2{font-size:1.1rem;font-weight:700;margin-bottom:6px}
+.drop-zone p{color:var(--muted);font-size:.88rem}
+.btn-pick{display:inline-block;margin-top:14px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 22px;font-size:.95rem;font-weight:700;cursor:pointer}
+.settings{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-top:20px;display:none;gap:20px;flex-wrap:wrap}
+.settings label{font-size:.88rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px}
+.settings select{border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-size:.9rem;background:#fff}
+.actions{margin-top:20px;display:none;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-export{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:12px 28px;font-size:1rem;font-weight:800;cursor:pointer}
+.btn-export:hover{background:#c92b2b}
+.btn-export:disabled{background:#ccc;cursor:not-allowed}
+.progress{display:none;margin-top:14px;background:#e5e7eb;border-radius:100px;height:6px}
+.progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .3s}
+#status{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.pages-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:16px;margin-top:24px}
+.page-card{background:#fff;border:1px solid var(--border);border-radius:10px;overflow:hidden;text-align:center}
+.page-card canvas{width:100%;display:block}
+.page-label{font-size:.78rem;color:var(--muted);padding:6px;font-weight:600}
+.btn-dl-page{display:block;width:100%;background:#f7f8fc;border:none;border-top:1px solid var(--border);padding:8px;font-size:.78rem;font-weight:700;cursor:pointer;color:var(--primary)}
+.btn-dl-page:hover{background:#fff5f5}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>pdf.</span>pravoo.in</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / PDF to Image</span>
+  </div>
+</nav>
+<main>
+  <h1>🖼️ PDF to Image</h1>
+  <p class="sub">Export every PDF page as a PNG or JPG image. Download individually or as a ZIP archive.</p>
+
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">📄</div>
+    <h2>Drag &amp; drop a PDF file here</h2>
+    <p>Or click to choose a file</p>
+    <button class="btn-pick" onclick="document.getElementById('file-input').click()">Choose PDF File</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" style="display:none"/>
+
+  <div class="settings" id="settings" style="display:none;flex-direction:row;align-items:flex-end">
+    <div>
+      <label for="fmt">Image format</label>
+      <select id="fmt">
+        <option value="png">PNG (lossless)</option>
+        <option value="jpg">JPG (smaller size)</option>
+      </select>
+    </div>
+    <div>
+      <label for="dpi">Resolution (DPI)</label>
+      <select id="dpi">
+        <option value="96">96 DPI — screen</option>
+        <option value="150" selected>150 DPI — balanced</option>
+        <option value="200">200 DPI — high quality</option>
+        <option value="300">300 DPI — print quality</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="actions" id="actions">
+    <button class="btn-export" id="btn-zip">⬇ Download All as ZIP</button>
+    <span style="color:var(--muted);font-size:.88rem" id="page-count"></span>
+  </div>
+  <div class="progress" id="progress"><div class="progress-bar" id="pbar"></div></div>
+  <div id="status"></div>
+  <div class="pages-grid" id="pages-grid"></div>
+</main>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+var pdfDoc=null, fileName='page';
+
+var dropZone=document.getElementById('drop-zone');
+var fileInput=document.getElementById('file-input');
+dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('over');});
+dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
+dropZone.addEventListener('drop',function(e){e.preventDefault();dropZone.classList.remove('over');loadFile(e.dataTransfer.files[0]);});
+dropZone.addEventListener('click',function(){fileInput.click();});
+fileInput.addEventListener('change',function(){loadFile(fileInput.files[0]);fileInput.value='';});
+
+async function loadFile(f){
+  if(!f||(!f.name.match(/\.pdf$/i)&&f.type!=='application/pdf')) return;
+  fileName=f.name.replace(/\.pdf$/i,'');
+  showStatus('Loading PDF...','');
+  var buf=await f.arrayBuffer();
+  pdfDoc=await pdfjsLib.getDocument({data:new Uint8Array(buf)}).promise;
+  document.getElementById('settings').style.display='flex';
+  document.getElementById('actions').style.display='flex';
+  document.getElementById('page-count').textContent=pdfDoc.numPages+' page'+(pdfDoc.numPages!==1?'s':'');
+  showStatus('','');
+  renderThumbs();
+}
+
+async function renderThumbs(){
+  var grid=document.getElementById('pages-grid');
+  grid.innerHTML='';
+  var dpi=parseInt(document.getElementById('dpi').value);
+  var scale=dpi/72;
+  for(var i=1;i<=pdfDoc.numPages;i++){
+    var page=await pdfDoc.getPage(i);
+    var vp=page.getViewport({scale:Math.min(scale*0.4, 2)});
+    var card=document.createElement('div'); card.className='page-card';
+    var canvas=document.createElement('canvas');
+    canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
+    await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+    var lbl=document.createElement('div'); lbl.className='page-label'; lbl.textContent='Page '+i;
+    var dlBtn=document.createElement('button'); dlBtn.className='btn-dl-page';
+    dlBtn.textContent='⬇ Download';
+    (function(pageNum,cv){
+      dlBtn.addEventListener('click',function(){ downloadPage(pageNum); });
+    })(i,canvas);
+    card.appendChild(canvas); card.appendChild(lbl); card.appendChild(dlBtn);
+    grid.appendChild(card);
+  }
+}
+
+document.getElementById('dpi').addEventListener('change', function(){ if(pdfDoc) renderThumbs(); });
+document.getElementById('fmt').addEventListener('change', function(){});
+
+async function renderPageHighRes(pageNum){
+  var page=await pdfDoc.getPage(pageNum);
+  var dpi=parseInt(document.getElementById('dpi').value);
+  var vp=page.getViewport({scale:dpi/72});
+  var canvas=document.createElement('canvas');
+  canvas.width=Math.round(vp.width); canvas.height=Math.round(vp.height);
+  await page.render({canvasContext:canvas.getContext('2d'),viewport:vp}).promise;
+  return canvas;
+}
+
+async function downloadPage(pageNum){
+  var fmt=document.getElementById('fmt').value;
+  var canvas=await renderPageHighRes(pageNum);
+  var dataUrl=canvas.toDataURL(fmt==='jpg'?'image/jpeg':'image/png', fmt==='jpg'?0.92:1);
+  var a=document.createElement('a');
+  a.href=dataUrl; a.download=fileName+'_page'+pageNum+'.'+(fmt==='jpg'?'jpg':'png'); a.click();
+}
+
+document.getElementById('btn-zip').addEventListener('click',async function(){
+  if(!pdfDoc) return;
+  var btn=this; btn.disabled=true; btn.textContent='Creating ZIP...';
+  var prog=document.getElementById('progress'),pbar=document.getElementById('pbar');
+  prog.style.display='block'; pbar.style.width='5%'; showStatus('','');
+  var fmt=document.getElementById('fmt').value;
+  try{
+    var zip=new JSZip();
+    for(var i=1;i<=pdfDoc.numPages;i++){
+      var canvas=await renderPageHighRes(i);
+      var dataUrl=canvas.toDataURL(fmt==='jpg'?'image/jpeg':'image/png', fmt==='jpg'?0.92:1);
+      var b64=dataUrl.split(',')[1];
+      zip.file(fileName+'_page'+i+'.'+(fmt==='jpg'?'jpg':'png'), b64, {base64:true});
+      pbar.style.width=Math.round((i/pdfDoc.numPages)*88)+'%';
+    }
+    var content=await zip.generateAsync({type:'blob'});
+    pbar.style.width='100%';
+    var a=document.createElement('a'); a.href=URL.createObjectURL(content);
+    a.download=fileName+'_images.zip'; a.click();
+    showStatus('✅ ZIP download started! '+pdfDoc.numPages+' image(s) inside.','ok');
+  }catch(e){showStatus('Error: '+e.message,'err');}
+  btn.disabled=false; btn.textContent='⬇ Download All as ZIP';
+  setTimeout(function(){prog.style.display='none';pbar.style.width='0%';},1500);
+});
+
+function showStatus(msg,type){
+  var s=document.getElementById('status');
+  if(!msg){s.style.display='none';return;}
+  s.textContent=msg; s.className=type==='ok'?'status-ok':'status-err'; s.style.display='block';
+}
+</script>
+</body>
+</html>
