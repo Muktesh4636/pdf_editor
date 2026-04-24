@@ -68,7 +68,7 @@
       "Edit PDF text online for free",
       "Drag and drop PDF upload",
       "Click-to-edit any text field in PDF",
-      "Auto-save on Enter key",
+      "Auto-save on edit",
       "Download edited PDF",
       "No signup or installation required",
       "Server copy: original and edited PDFs can be archived for your session"
@@ -89,7 +89,7 @@
       {
         "@type": "Question",
         "name": "How do I edit a PDF online for free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Go to pdf.pravoo.in, drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Press Enter to confirm and click Save & Download." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Go to pdf.pravoo.in, drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Edit the text and click Save & Download — no Enter needed." }
       },
       {
         "@type": "Question",
@@ -127,7 +127,7 @@
     "step": [
       { "@type": "HowToStep", "position": 1, "name": "Upload your PDF", "text": "Go to pdf.pravoo.in and drag-and-drop your PDF, or click Choose PDF File to browse." },
       { "@type": "HowToStep", "position": 2, "name": "Click on text to edit", "text": "Hover over any text in the PDF. Click it to open an editable field and type your changes." },
-      { "@type": "HowToStep", "position": 3, "name": "Press Enter to confirm", "text": "Press Enter to confirm your change. Edited fields show a green border." },
+      { "@type": "HowToStep", "position": 3, "name": "Confirm edit", "text": "Click elsewhere or press Enter to confirm your change. Edited fields show a green border." },
       { "@type": "HowToStep", "position": 4, "name": "Download the edited PDF", "text": "Click Save & Download in the toolbar. Your edited PDF is downloaded automatically." }
     ]
   }
@@ -478,7 +478,7 @@
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
         How do I edit a PDF online for free? <span class="faq-arrow">&#9660;</span>
       </button>
-      <div class="faq-a">Go to pdf.pravoo.in, upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Press Enter to confirm, then click Save &amp; Download.</div>
+      <div class="faq-a">Go to pdf.pravoo.in, upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Click Save &amp; Download when done — no need to press Enter first.</div>
     </div>
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
@@ -515,7 +515,7 @@
   </div>
   <div class="hint-bar">
     <span class="hint-dot"></span>
-    Click any text to edit &nbsp;&mdash;&nbsp; Press <strong>Enter</strong> to confirm &nbsp;&mdash;&nbsp;
+    Click any text to edit &nbsp;&mdash;&nbsp; Type your change &nbsp;&mdash;&nbsp;
     Use <strong>Save &amp; Download</strong> to export with your changes
   </div>
   <div class="pages-area" id="pages-area"></div>
@@ -922,7 +922,16 @@
 
   function flushActiveEdit() {
     var active = document.activeElement;
-    if (active && active.classList.contains('tx')) { active.blur(); }
+    if (!active || !active.classList.contains('tx')) return;
+    /* Commit directly — don't wait for the blur event to fire asynchronously.
+       This ensures text typed without pressing Enter is captured when the user
+       clicks Save & Download directly. */
+    var changed = active.textContent !== active.dataset.orig;
+    if (changed) {
+      eraseCanvasUnderTx(active);
+      commitEdit(active);
+    }
+    active.blur();
   }
 
   /*
