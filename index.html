@@ -256,6 +256,11 @@
       box-shadow: 0 3px 10px rgba(16,185,129,0.3);
     }
     .tbtn-dl:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.4); }
+    .tbtn-stamp {
+      background: linear-gradient(135deg,#f59e0b,#d97706); color: white;
+      box-shadow: 0 3px 10px rgba(245,158,11,0.3);
+    }
+    .tbtn-stamp:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245,158,11,0.45); }
     .tbtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
 
     .hint-bar {
@@ -507,6 +512,8 @@
   <div class="toolbar">
     <button class="tbtn tbtn-dl" id="btn-dl" onclick="downloadPdf()" disabled>&#8595; Download</button>
     <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" style="display:none">&#128190; Save &amp; Download</button>
+    <button class="tbtn tbtn-stamp" id="btn-stamp" onclick="triggerStampUpload()" title="Add signature, stamp, or image">&#9998; Stamp / Sign</button>
+    <input type="file" id="stamp-input" accept="image/*" style="display:none" />
     <div class="toolbar-spacer"></div>
     <span class="edit-badge" id="edit-badge"></span>
     <div class="filename-wrap">
@@ -537,6 +544,8 @@
   var savedBytes    = null;
   var pdfArchiveId  = null; // server row id for before/after PDF storage
   var edits         = new Map(); // pageIndex(0-based) -> Map(itemIndex -> newText)
+  /* overlays: pageNum(1-based) -> Array of {el, dataUrl, x, y, w, h} */
+  var overlays      = new Map();
 
   function $(id) { return document.getElementById(id); }
 
@@ -607,10 +616,188 @@
   function updateBadge() {
     var total = 0;
     edits.forEach(function(m) { total += m.size; });
+    overlays.forEach(function(arr) { total += arr.length; });
+    itemShiftPx.forEach(function(m) { total += m.size; });
     var badge = $('edit-badge');
     badge.style.display = total > 0 ? 'inline-block' : 'none';
     badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
     $('btn-save-dl').style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+
+  /* ---- Stamp / Signature overlay ---- */
+  function triggerStampUpload() {
+    if (!pdfJsDoc) { toast('Upload a PDF first.', 'info'); return; }
+    $('stamp-input').click();
+  }
+
+  $('stamp-input').addEventListener('change', function() {
+    var file = this.files && this.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast('Please select an image file.', 'error'); return; }
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      /* Place on first visible page */
+      var visibleWrap = document.querySelector('.page-wrapper');
+      if (!visibleWrap) { toast('No page loaded yet.', 'error'); return; }
+      var pageNum = parseInt(visibleWrap.dataset.pageNum, 10) || 1;
+      addOverlay(pageNum, e.target.result);
+    };
+    reader.readAsDataURL(file);
+    this.value = '';
+  });
+
+  function addOverlay(pageNum, dataUrl) {
+    var wrap = document.querySelector('.page-wrapper[data-page-num="' + pageNum + '"]');
+    if (!wrap) return;
+
+    if (!overlays.has(pageNum)) overlays.set(pageNum, []);
+
+    /* Start at centre of page, 30% of page width */
+    var wrapW = wrap.offsetWidth  || 200;
+    var wrapH = wrap.offsetHeight || 200;
+    var imgW  = Math.round(wrapW * 0.3);
+    var imgX  = Math.round((wrapW - imgW) / 2);
+    var imgY  = Math.round(wrapH * 0.1);
+
+    var img    = new Image();
+    img.src    = dataUrl;
+    img.onload = function() {
+      var ratio  = img.naturalWidth / img.naturalHeight;
+      var imgH   = Math.round(imgW / ratio);
+      createOverlayEl(pageNum, wrap, dataUrl, imgX, imgY, imgW, imgH);
+    };
+    /* fallback if image loads instantly */
+    if (img.complete) {
+      var ratio = img.naturalWidth / img.naturalHeight;
+      var imgH  = Math.round(imgW / ratio);
+      createOverlayEl(pageNum, wrap, dataUrl, imgX, imgY, imgW, imgH);
+    }
+  }
+
+  function createOverlayEl(pageNum, wrap, dataUrl, x, y, w, h) {
+    var entry = { dataUrl: dataUrl, x: x, y: y, w: w, h: h, el: null };
+    overlays.get(pageNum).push(entry);
+
+    var el = document.createElement('div');
+    el.className = 'img-overlay';
+    el.style.cssText = 'position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;' +
+      'cursor:move;border:2px dashed rgba(99,102,241,0.7);border-radius:3px;box-sizing:border-box;z-index:30;touch-action:none;';
+    entry.el = el;
+
+    var inner = document.createElement('img');
+    inner.src = dataUrl;
+    inner.style.cssText = 'width:100%;height:100%;display:block;pointer-events:none;user-select:none;';
+    el.appendChild(inner);
+
+    /* Delete button */
+    var del = document.createElement('button');
+    del.textContent = '×';
+    del.title = 'Remove';
+    del.style.cssText = 'position:absolute;top:-10px;right:-10px;width:22px;height:22px;border-radius:50%;' +
+      'background:#ef4444;color:#fff;border:none;font-size:14px;line-height:1;cursor:pointer;z-index:40;' +
+      'display:flex;align-items:center;justify-content:center;padding:0;';
+    del.addEventListener('click', function(e) {
+      e.stopPropagation();
+      el.parentNode && el.parentNode.removeChild(el);
+      var arr = overlays.get(pageNum);
+      if (arr) {
+        var idx = arr.indexOf(entry);
+        if (idx >= 0) arr.splice(idx, 1);
+      }
+      updateBadge();
+    });
+    el.appendChild(del);
+
+    /* Resize handles — 4 corners */
+    ['nw','ne','se','sw'].forEach(function(dir) {
+      var rh = document.createElement('div');
+      rh.dataset.resize = dir;
+      var css = 'position:absolute;width:12px;height:12px;border-radius:2px;' +
+        'background:#6366f1;border:2px solid #fff;box-sizing:border-box;z-index:50;touch-action:none;';
+      if (dir === 'nw') css += 'top:-6px;left:-6px;cursor:nw-resize;';
+      if (dir === 'ne') css += 'top:-6px;right:-6px;cursor:ne-resize;';
+      if (dir === 'se') css += 'bottom:-6px;right:-6px;cursor:se-resize;';
+      if (dir === 'sw') css += 'bottom:-6px;left:-6px;cursor:sw-resize;';
+      rh.style.cssText = css;
+      el.appendChild(rh);
+    });
+
+    makeDraggableResizable(el, wrap, entry);
+    wrap.appendChild(el);
+    updateBadge();
+  }
+
+  function makeDraggableResizable(el, wrap, entry) {
+    var startX, startY, startL, startT, startW, startH, resizeDir = null, dragging = false;
+
+    function getXY(e) {
+      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    }
+
+    function onDown(e) {
+      var target = e.target;
+      if (target === el || target.tagName === 'IMG') {
+        /* drag move */
+        resizeDir = null; dragging = true;
+      } else if (target.dataset && target.dataset.resize) {
+        /* resize */
+        resizeDir = target.dataset.resize; dragging = true;
+      } else { return; }
+
+      e.preventDefault(); e.stopPropagation();
+      var p = getXY(e);
+      startX = p.x; startY = p.y;
+      startL = parseInt(el.style.left,  10) || 0;
+      startT = parseInt(el.style.top,   10) || 0;
+      startW = parseInt(el.style.width, 10) || entry.w;
+      startH = parseInt(el.style.height,10) || entry.h;
+
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup',   onUp);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend',  onUp);
+    }
+
+    function onMove(e) {
+      if (!dragging) return;
+      e.preventDefault();
+      var p   = getXY(e);
+      var dx  = p.x - startX;
+      var dy  = p.y - startY;
+      var MIN = 30;
+      if (!resizeDir) {
+        /* move */
+        var nx = Math.max(0, Math.min(startL + dx, wrap.offsetWidth  - startW));
+        var ny = Math.max(0, Math.min(startT + dy, wrap.offsetHeight - startH));
+        el.style.left = nx + 'px';
+        el.style.top  = ny + 'px';
+        entry.x = nx; entry.y = ny;
+      } else {
+        /* resize */
+        var nw = startW, nh = startH, nl = startL, nt = startT;
+        if (resizeDir.indexOf('e') >= 0) nw = Math.max(MIN, startW + dx);
+        if (resizeDir.indexOf('s') >= 0) nh = Math.max(MIN, startH + dy);
+        if (resizeDir.indexOf('w') >= 0) { nw = Math.max(MIN, startW - dx); nl = startL + (startW - nw); }
+        if (resizeDir.indexOf('n') >= 0) { nh = Math.max(MIN, startH - dy); nt = startT + (startH - nh); }
+        el.style.width  = nw + 'px';
+        el.style.height = nh + 'px';
+        el.style.left   = nl + 'px';
+        el.style.top    = nt + 'px';
+        entry.w = nw; entry.h = nh; entry.x = nl; entry.y = nt;
+      }
+    }
+
+    function onUp() {
+      dragging = false;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup',   onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend',  onUp);
+    }
+
+    el.addEventListener('mousedown',  onDown);
+    el.addEventListener('touchstart', onDown, { passive: false });
   }
 
   /* ---- Upload ---- */
@@ -675,6 +862,11 @@
       savedBytes    = null;
       pdfArchiveId  = null;
       edits         = new Map();
+      overlays      = new Map();
+      document.querySelectorAll('.img-overlay').forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
+      lineGroups    = new Map();
+      itemShiftPx   = new Map();
+      pagePreviewScale = new Map();
 
       $('file-name').value          = file.name;
       $('btn-dl').disabled          = false;
@@ -760,6 +952,9 @@
             var layer = document.createElement('div');
             layer.className = 'text-layer';
 
+            /* Store preview scale for this page (used in export coordinate conversion) */
+            pagePreviewScale.set(pageNum - 1, viewport.scale);
+
             textContent.items.forEach(function(item, idx) {
               if (!item.str) return;
               var tx       = pdfjsLib.Util.transform(viewport.transform, item.transform);
@@ -775,7 +970,7 @@
               el.dataset.orig    = item.str;
               /* Min overlay width */
               el.dataset.ow      = String(Math.ceil((item.width || 0) * viewport.scale) + 6);
-              /* Axis-aligned rect (viewport px) covering raster text on canvas ? used to paint white */
+              /* Axis-aligned rect (viewport px) covering raster text on canvas — used to paint white */
               var pad      = 4;
               var textRunW = item.width || (item.str.length * fontSize * 0.55);
               var bw       = textRunW + pad * 2 + 10;
@@ -784,6 +979,9 @@
               el.dataset.eraseTop  = String(tx[5] - fontSize - pad);
               el.dataset.eraseW    = String(Math.ceil(bw));
               el.dataset.eraseH    = String(Math.ceil(bh));
+              /* Original baseline Y in preview px — needed for line-collapse math */
+              el.dataset.baselineY = String(tx[5]);
+              el.dataset.lineH     = String(Math.round(fontSize * 1.45));
 
               el.style.left       = tx[4] + 'px';
               el.style.top        = (tx[5] - fontSize) + 'px';
@@ -797,6 +995,16 @@
                 el.style.transform       = 'rotate(' + angle + 'rad)';
                 el.style.transformOrigin = '0 100%';
               }
+
+              /* Register in line-group map (group items at same y into logical lines) */
+              (function() {
+                var pi = pageNum - 1;
+                var yKey = Math.round(tx[5] / 2) * 2; // 2 px bucket
+                if (!lineGroups.has(pi)) lineGroups.set(pi, new Map());
+                var pg = lineGroups.get(pi);
+                if (!pg.has(yKey)) pg.set(yKey, {items:[], baselineY: tx[5], lineH: Math.round(fontSize * 1.45)});
+                pg.get(yKey).items.push({el: el, ii: idx});
+              })();
 
               el.addEventListener('input', function() {
                 /* Only erase canvas once the user actually starts typing */
@@ -918,6 +1126,61 @@
       el.style.minWidth = '';
     }
     updateBadge();
+    checkLineCollapse(pi, ii);
+  }
+
+  /*
+   * If ALL items on the same logical line are now empty, collapse that line:
+   * erase it from the canvas, hide its overlays, and shift every item below
+   * upward by the line height — both in the preview (div.style.top) and in
+   * the itemShiftPx table used by the exporter.
+   */
+  function checkLineCollapse(pi, changedIi) {
+    var pg = lineGroups.get(pi);
+    if (!pg) return;
+
+    /* Find which y-group the changed item belongs to */
+    var targetGroup = null;
+    pg.forEach(function(grp) {
+      if (grp.items.some(function(x) { return x.ii === changedIi; })) {
+        targetGroup = grp;
+      }
+    });
+    if (!targetGroup) return;
+
+    /* All items in this line must be empty for collapse */
+    var allEmpty = targetGroup.items.every(function(x) {
+      return x.el.textContent.trim() === '';
+    });
+    if (!allEmpty) return;
+
+    var lineBaselineY = targetGroup.baselineY; /* preview px */
+    var shiftPx       = targetGroup.lineH;     /* preview px to shift items below */
+
+    /* Erase the deleted-line items from canvas and hide their overlays */
+    targetGroup.items.forEach(function(x) {
+      eraseCanvasUnderTx(x.el);
+      x.el.style.display = 'none';
+      x.el.dataset.collapsed = 'true';
+    });
+
+    /* Shift all items whose ORIGINAL baseline is below this line */
+    pg.forEach(function(grp) {
+      if (grp.baselineY <= lineBaselineY) return; /* only items below */
+      grp.items.forEach(function(x) {
+        /* Erase original canvas position BEFORE moving the div */
+        eraseCanvasUnderTx(x.el);
+
+        /* Update the overlay position */
+        var curTop = parseFloat(x.el.style.top);
+        x.el.style.top = (curTop - shiftPx) + 'px';
+
+        /* Record cumulative shift for this item */
+        if (!itemShiftPx.has(pi)) itemShiftPx.set(pi, new Map());
+        var pageShifts = itemShiftPx.get(pi);
+        pageShifts.set(x.ii, (pageShifts.get(x.ii) || 0) - shiftPx);
+      });
+    });
   }
 
   function flushActiveEdit() {
@@ -1188,14 +1451,85 @@
    * Replace PDF text on export canvas: sample ink, wipe all edited regions, then draw all new text.
    * (Single-pass erase+draw per item made later white rects erase earlier lines? merged/clipped text.)
    */
-  function applyExportTextReplacements(ctx, viewport, textContent, pageEdits) {
+  function applyExportTextReplacements(ctx, viewport, textContent, pageEdits, pageShifts, prevScale) {
+    var exportScale = Math.sqrt(viewport.transform[0] * viewport.transform[0] +
+                                viewport.transform[1] * viewport.transform[1]);
+    var scaleRatio  = prevScale > 0 ? (exportScale / prevScale) : 1;
+
+    /* ---- Phase 0: move pixels for items that shifted but were NOT edited ---- *
+     * We copy the pixel-band from the original canvas position to the shifted
+     * position, then fill the original with white. This makes unedited-but-
+     * shifted lines appear at their new y in the exported PDF.
+     * Process bottom-to-top so moved pixels don't stomp each other.
+     */
+    if (pageShifts && pageShifts.size > 0) {
+      /* Gather items that have a shift but NO edit (i.e. their text is unchanged) */
+      var shiftOnlyOps = [];
+      pageShifts.forEach(function(shiftPreviewPx, ii) {
+        if (pageEdits && pageEdits.has(ii)) return; /* handled as an edit below */
+        var item = textContent.items[ii];
+        if (!item) return;
+        var tx = pdfjsLib.Util.transform(viewport.transform, item.transform);
+        var fs = Math.sqrt(tx[0]*tx[0] + tx[1]*tx[1]);
+        if (fs < 0.5) return;
+
+        var shiftExportPx = shiftPreviewPx * scaleRatio; /* negative = up */
+        var padX = Math.max(fs * 0.15, 4);
+        var wPdf = (typeof item.width === 'number' && item.width > 0)
+          ? Math.hypot(tx[0]*item.width, tx[1]*item.width) : 0;
+        var w = Math.max(ctx.measureText(item.str || '').width, wPdf,
+                         (item.str||'').length * fs * 0.62) * 1.1 + padX * 2;
+        var ascent  = fs * 0.85 + 2;
+        var descent = fs * 0.25 + 2;
+
+        shiftOnlyOps.push({
+          srcX: Math.round(tx[4] - padX),
+          srcY: Math.round(tx[5] - ascent),
+          w:    Math.round(w),
+          h:    Math.round(ascent + descent),
+          dy:   Math.round(shiftExportPx)
+        });
+      });
+
+      /* Sort bottom-to-top (largest srcY first) to avoid overwriting sources */
+      shiftOnlyOps.sort(function(a, b) { return b.srcY - a.srcY; });
+
+      ctx.save();
+      shiftOnlyOps.forEach(function(op) {
+        var cw = ctx.canvas.width, ch = ctx.canvas.height;
+        var sx = Math.max(0, op.srcX), sy = Math.max(0, op.srcY);
+        var sw = Math.min(op.w, cw - sx), sh = Math.min(op.h, ch - sy);
+        if (sw <= 0 || sh <= 0) return;
+        try {
+          var imgData = ctx.getImageData(sx, sy, sw, sh);
+          var dstY = sy + op.dy;
+          if (dstY >= 0 && dstY + sh <= ch) {
+            ctx.putImageData(imgData, sx, dstY);
+          }
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(sx, sy, sw, sh);
+        } catch(e) { /* cross-origin guard */ }
+      });
+      ctx.restore();
+    }
+
+    /* ---- Phase 1-3: sample ink / erase / draw for all edited items ---- */
     var layouts = [];
-    pageEdits.forEach(function(newText, itemIdx) {
+    pageEdits && pageEdits.forEach(function(newText, itemIdx) {
       var item = textContent.items[itemIdx];
       if (!item) return;
       var L = buildExportTextLayout(ctx, viewport, item, newText);
       if (!L) return;
       L.ink = sampleExportTextInk(ctx, item, L);
+
+      /* Apply y-shift if this item was also shifted */
+      if (pageShifts && pageShifts.has(itemIdx)) {
+        var shiftExPx = pageShifts.get(itemIdx) * scaleRatio;
+        L.eraseY     += shiftExPx;
+        L.tx          = L.tx.slice(); /* don't mutate shared reference */
+        L.tx[5]      += shiftExPx;
+      }
+
       layouts.push(L);
     });
     var i;
@@ -1209,6 +1543,8 @@
     setTimeout(function() {
       var total = 0;
       edits.forEach(function(m) { total += m.size; });
+      overlays.forEach(function(arr) { total += arr.length; });
+      itemShiftPx.forEach(function(m) { total += m.size; });
       if (total === 0) { toast('Make an edit first.', 'info'); return; }
 
       showLoading('Exporting...');
@@ -1242,12 +1578,46 @@
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 ctx.imageSmoothingEnabled = true;
                 ctx.imageSmoothingQuality = 'high';
-                var pageEdits = edits.get(pageNum - 1);
-                if (pageEdits && pageEdits.size > 0) {
+                var pageEdits  = edits.get(pageNum - 1);
+                var pageShifts = itemShiftPx.get(pageNum - 1);
+                var prevScale  = pagePreviewScale.get(pageNum - 1) || 1;
+                var hasEdits   = pageEdits && pageEdits.size > 0;
+                var hasShifts  = pageShifts && pageShifts.size > 0;
+                if (hasEdits || hasShifts) {
                   return page.getTextContent().then(function(textContent) {
-                    applyExportTextReplacements(ctx, viewport, textContent, pageEdits);
+                    applyExportTextReplacements(ctx, viewport, textContent,
+                      hasEdits ? pageEdits : new Map(), pageShifts, prevScale);
                   });
                 }
+              }).then(function() {
+                /* Draw image overlays onto the export canvas */
+                var pageOverlays = overlays.get(pageNum);
+                if (!pageOverlays || !pageOverlays.length) return Promise.resolve();
+
+                /* Get the viewer scale used when rendering this page for display */
+                var viewerWrap   = document.querySelector('.page-wrapper[data-page-num="' + pageNum + '"]');
+                var viewerW      = viewerWrap ? (viewerWrap.offsetWidth  || canvas.width)  : canvas.width;
+                var viewerH      = viewerWrap ? (viewerWrap.offsetHeight || canvas.height) : canvas.height;
+                /* Scale factors from viewer-px → export-canvas-px */
+                var scaleX = canvas.width  / viewerW;
+                var scaleY = canvas.height / viewerH;
+
+                return Promise.all(pageOverlays.map(function(ov) {
+                  return new Promise(function(resolve) {
+                    var img   = new Image();
+                    img.onload = function() {
+                      ctx.drawImage(img,
+                        Math.round(ov.x * scaleX),
+                        Math.round(ov.y * scaleY),
+                        Math.round(ov.w * scaleX),
+                        Math.round(ov.h * scaleY)
+                      );
+                      resolve();
+                    };
+                    img.onerror = resolve;
+                    img.src = ov.dataUrl;
+                  });
+                }));
               }).then(function() {
                 var dataUrl = canvas.toDataURL('image/png');
                 var b64     = dataUrl.split(',')[1];
@@ -1273,7 +1643,13 @@
         hideLoading();
         $('btn-save-dl').style.display = 'none';
         $('edit-badge').style.display  = 'none';
-        edits = new Map();
+        edits    = new Map();
+        overlays = new Map();
+        lineGroups   = new Map();
+        itemShiftPx  = new Map();
+        pagePreviewScale = new Map();
+        /* Remove overlay elements from DOM */
+        document.querySelectorAll('.img-overlay').forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
         toast('Saved! Downloading...', 'success');
         archiveEditedPdf().finally(function() {
           setTimeout(downloadPdf, 300);
