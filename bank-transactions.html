@@ -80,7 +80,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   <p class="sub">Upload your bank statement PDF, add one or more people (name can be partial), optional phone numbers, and we show only lines that match. Everything runs in your browser.</p>
 
   <div class="info-note">
-    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. Scanned (image-only) PDFs have no text to search — use a text-based statement or the bank’s “download PDF” (not a photo).</div>
+    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. <strong>Scanned PDFs:</strong> if the file has no embedded text, we run <strong>OCR</strong> in your browser (English). The first run downloads a language pack (~10–15 MB); large statements may take a few minutes. OCR is approximate — try short name fragments if needed.</div>
 
   <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Drop PDF or click to choose">
     <div class="drop-icon">📄</div>
@@ -136,6 +136,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   var allLines = []; /* { page, text, line } */
   var lastMatches = [];
   var linesExtractionComplete = false;
+  var lastExtractUsedOcr = false;
   var $ = function(id) { return document.getElementById(id); };
 
   function showStatus(msg, ok) {
@@ -241,6 +242,84 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       });
     }
     return step();
+  }
+
+  function loadTesseractScript() {
+    return new Promise(function(resolve, reject) {
+      if (typeof Tesseract !== 'undefined' && Tesseract.createWorker) return resolve();
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/tesseract.min.js';
+      s.async = true;
+      s.onload = function() { resolve(); };
+      s.onerror = function() { reject(new Error('Could not load OCR library from CDN.')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  /**
+   * Image-only / scanned PDFs: render each page and run Tesseract (English).
+   * Slow; caps page count for browser stability.
+   */
+  function extractAllLinesViaOcr(doc) {
+    var OCR_MAX_PAGES = 45;
+    return loadTesseractScript().then(function() {
+      var n = doc.numPages;
+      if (n > OCR_MAX_PAGES) {
+        throw new Error('This PDF has ' + n + ' pages. OCR is limited to ' + OCR_MAX_PAGES + ' pages in the browser. Remove extra pages or split the file, then try again.');
+      }
+      allLines = [];
+      var workerOpts = {
+        workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/worker.min.js',
+        corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/',
+        logger: function(m) {
+          if (m.status === 'recognizing text' && typeof m.progress === 'number' && m.progress >= 0) {
+            var pageIdx = typeof m.page === 'number' ? m.page : 1;
+            var pct = 100 * ((pageIdx - 1) + m.progress) / n;
+            $('progress-bar').style.width = Math.min(99, Math.round(pct)) + '%';
+          }
+        }
+      };
+      return Tesseract.createWorker('eng', 1, workerOpts);
+    }).then(function(worker) {
+      var n = doc.numPages;
+      function runPage(p) {
+        if (p > n) {
+          return worker.terminate().then(function() { return null; });
+        }
+        if ($('p-hint')) {
+          $('p-hint').textContent = 'OCR page ' + p + ' of ' + n + ' (first visit may download language data)…';
+        }
+        return doc.getPage(p).then(function(page) {
+          var v1 = page.getViewport({ scale: 1 });
+          var scale = 2.25;
+          if (v1.width * scale > 2600) scale = 2600 / v1.width;
+          var vp = page.getViewport({ scale: scale });
+          var c = document.createElement('canvas');
+          c.width = Math.floor(vp.width);
+          c.height = Math.floor(vp.height);
+          var ctx = c.getContext('2d');
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, c.width, c.height);
+          return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+            return worker.recognize(c);
+          }).then(function(result) {
+            var textBlock = (result && result.data && result.data.text) ? result.data.text : '';
+            var rawLines = textBlock.split(/\r?\n/);
+            for (var li = 0; li < rawLines.length; li++) {
+              var line = rawLines[li].replace(/[ \t]+/g, ' ').trim();
+              if (line.length) allLines.push({ page: p, text: line, ocr: true });
+            }
+            $('progress-bar').style.width = Math.round(100 * p / n) + '%';
+            return runPage(p + 1);
+          }).catch(function(err) {
+            return worker.terminate().then(function() {
+              throw err;
+            });
+          });
+        });
+      }
+      return runPage(1);
+    });
   }
 
   function getPersonFields() {
@@ -374,18 +453,35 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
         showStatus('Reading the PDF. Please wait for the bar to finish before tapping Find…', 'info');
         return extractAllLines();
       }).then(function() {
+        if (allLines.length) {
+          lastExtractUsedOcr = false;
+          return Promise.resolve();
+        }
+        lastExtractUsedOcr = true;
+        if ($('p-hint')) $('p-hint').textContent = 'No text layer — running OCR on each page (slow; keep this tab open)…';
+        showStatus('No embedded text — loading OCR in your browser. First time: ~10–15 MB English data downloads. Large statements may take several minutes.', 'info');
+        $('progress-wrap').style.display = 'block';
+        $('progress-bar').style.width = '0%';
+        return extractAllLinesViaOcr(pdfDoc);
+      }).then(function() {
         linesExtractionComplete = true;
         $('progress-wrap').style.display = 'none';
         hideStatus();
         if (!allLines.length) {
           $('btn-filter').disabled = true;
-          showStatus('No text could be read from this file. It is usually a scanned photo, a password-protected layer, or the bank’s “PDF” is picture-only. Try: in your bank app choose email/SMS e-statement download (not a screenshot), or “Download as text/CSV/Excel” if available. In Adobe or your phone, try selecting the words — if you cannot select any text, this tool cannot search it (no secure OCR in-browser here).', false);
+          showStatus('No lines could be read — not even with OCR. Try a clearer scan, fewer pages, or a text/Excel export from your bank.', false);
+          lastExtractUsedOcr = false;
         } else {
           $('btn-filter').disabled = false;
-          showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
+          if (lastExtractUsedOcr) {
+            showStatus('Loaded ' + allLines.length + ' line(s) via OCR from ' + pdfDoc.numPages + ' page(s). Text may have small mistakes — use short name fragments. Tap Find.', true);
+          } else {
+            showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
+          }
         }
       }).catch(function(e) {
         linesExtractionComplete = false;
+        lastExtractUsedOcr = false;
         $('progress-wrap').style.display = 'none';
         showStatus('Could not read PDF: ' + (e.message || e), false);
         pdfDoc = null;
