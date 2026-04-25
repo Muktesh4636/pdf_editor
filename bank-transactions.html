@@ -50,7 +50,30 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .result-wrap{margin-top:24px;display:none}
 .result-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
 .result-count{font-size:.95rem;font-weight:800;color:var(--ok)}
-.result-box{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;font-size:.82rem;line-height:1.55;max-height:min(50vh,420px);overflow:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.result-box{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;font-size:.82rem;line-height:1.55;max-height:min(70vh,560px);overflow:auto;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.summary-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+@media(max-width:520px){.summary-strip{grid-template-columns:1fr}}
+.summary-pill{background:#1e293b;border-radius:8px;padding:10px 12px;border:1px solid #334155}
+.summary-pill.c{border-left:3px solid #10b981}
+.summary-pill.d{border-left:3px solid #f43f5e}
+.summary-pill .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;margin-bottom:4px}
+.summary-pill .val{font-size:1rem;font-weight:800;color:#f1f5f9}
+.tx-block{margin-top:14px}
+.tx-block h3{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #334155}
+.tx-block h3.c{color:#6ee7b7}
+.tx-block h3.d{color:#fda4af}
+.tx-block h3.u{color:#cbd5e1}
+.tx-line{display:block;border-radius:4px;padding:6px 8px;margin:4px 0;line-height:1.45;background:rgba(30,41,59,.6);border:1px solid #334155}
+.tx-line .pg{opacity:.65;font-size:.75rem;margin-right:6px}
+.tx-line .amt{float:right;font-weight:700;color:#fde68a;margin-left:8px}
+.tx-line.c{border-left:3px solid #10b981}
+.tx-line.d{border-left:3px solid #f43f5e}
+.tx-line.u{border-left:3px solid #64748b}
+.summary-final{margin-top:18px;padding:14px 16px;background:#1e293b;border-radius:10px;border:1px solid #475569}
+.summary-final h4{font-size:.72rem;text-transform:uppercase;color:#94a3b8;margin-bottom:10px;letter-spacing:.05em}
+.summary-final .row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:6px 0;border-top:1px solid #334155;font-weight:700}
+.summary-final .row:first-of-type{border-top:none;padding-top:0}
+.summary-final .muted{font-weight:500;color:#94a3b8;font-size:.8rem}
 .result-line.match{background:rgba(5,150,105,.2);display:block;border-radius:4px;padding:0 2px;margin:2px 0}
 .out-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
 .out-actions button{flex:1;min-width:140px;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem}
@@ -80,7 +103,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   <p class="sub">Upload your bank statement PDF, add one or more people (name can be partial), optional phone numbers, and we show only lines that match. Everything runs in your browser.</p>
 
   <div class="info-note">
-    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. <strong>Scanned PDFs:</strong> if the file has no embedded text, we run <strong>OCR</strong> in your browser (English). The first run downloads a language pack (~10–15 MB); large statements may take a few minutes. OCR is approximate — try short name fragments if needed.</div>
+    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. After filtering, lines are split into <strong>credit</strong> vs <strong>debit</strong> using common keywords (Cr/Dr, deposit, withdraw, UPI, etc.) and amounts are estimated from numbers on each line — <strong>verify totals with your bank.</strong> <strong>Scanned PDFs:</strong> we run <strong>OCR</strong> in your browser when there is no text layer (English; first run ~10–15 MB).</div>
 
   <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Drop PDF or click to choose">
     <div class="drop-icon">📄</div>
@@ -135,6 +158,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   var originalName = 'statement.pdf';
   var allLines = []; /* { page, text, line } */
   var lastMatches = [];
+  var lastResultBundle = null;
   var linesExtractionComplete = false;
   var lastExtractUsedOcr = false;
   var $ = function(id) { return document.getElementById(id); };
@@ -367,19 +391,155 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return matches;
   }
 
+  function formatINR(n) {
+    if (n == null || isNaN(n)) return '—';
+    try {
+      return '₹' + Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } catch (e) {
+      return '₹' + (Math.round(n * 100) / 100);
+    }
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  /** Best-effort amount from one statement line (Indian / generic formats). */
+  function extractAmount(text) {
+    var raw = String(text).replace(/,/g, '');
+    var nums = [];
+    var re = /\d{1,10}(?:\.\d{1,4})?/g;
+    var m;
+    while ((m = re.exec(raw)) !== null) {
+      var v = parseFloat(m[0]);
+      if (isNaN(v) || v <= 0) continue;
+      if (v >= 1990 && v <= 2035 && m[0].indexOf('.') < 0) continue;
+      nums.push(v);
+    }
+    if (!nums.length) return null;
+    return Math.max.apply(null, nums);
+  }
+
+  /** Heuristic credit vs debit (varies by bank; “unknown” when unclear). */
+  function classifyLine(text) {
+    var t = String(text);
+    var low = t.toLowerCase();
+    var deb = /(\bdr\.?\b|\bdebit\b|\bdebited\b|\bwithdraw\w*|\bwdl\b|\bpayment to\b|\bpaid to\b|\btransfer to\b|\boutward\b|\bimps.*\bdr\b|\bneft.*\bdr\b|\bupi.*\bdr\b)/i.test(t);
+    var cred = /(\bcr\.?\b|\bcredit\b|\bcredited\b|\bdeposit\b|\breceived from\b|\bsalary\b|\brefund\b|\binward\b|\bimps.*\bcr\b|\bneft.*\bcr\b|\bupi.*\bcr\b)/i.test(t);
+    if (deb && cred) {
+      var di = t.search(/\bdebit|debited|\bdr\b/i);
+      var ci = t.search(/\bcredit|credited|\bcr\b/i);
+      if (di >= 0 && ci >= 0) return di <= ci ? 'debit' : 'credit';
+      return 'unknown';
+    }
+    if (deb) return 'debit';
+    if (cred) return 'credit';
+    if (/[−–—]\s*[₹]?\s*\d|\(\s*₹?\s*[\d,]/.test(t)) return 'debit';
+    if (/\+\s*[₹]?\s*[\d,]/.test(t)) return 'credit';
+    return 'unknown';
+  }
+
+  function enrichMatch(m) {
+    var amt = extractAmount(m.text);
+    var type = classifyLine(m.text);
+    return { page: m.page, text: m.text, amount: amt, type: type };
+  }
+
+  function partitionEnriched(rows) {
+    var credits = [];
+    var debits = [];
+    var unknown = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.type === 'credit') credits.push(r);
+      else if (r.type === 'debit') debits.push(r);
+      else unknown.push(r);
+    }
+    return { credits: credits, debits: debits, unknown: unknown };
+  }
+
+  function sumAmounts(rows) {
+    var s = 0;
+    var n = 0;
+    for (var i = 0; i < rows.length; i++) {
+      if (rows[i].amount != null && !isNaN(rows[i].amount)) {
+        s += rows[i].amount;
+        n++;
+      }
+    }
+    return { sum: s, withAmount: n };
+  }
+
+  function lineHtml(row) {
+    var safe = esc(row.text);
+    var amt = row.amount != null ? '<span class="amt">' + formatINR(row.amount) + '</span>' : '';
+    var cls = row.type === 'credit' ? 'c' : row.type === 'debit' ? 'd' : 'u';
+    return '<div class="tx-line ' + cls + '">' + amt + '<span class="pg">p.' + row.page + '</span>' + safe + '</div>';
+  }
+
   function renderMatches(matches) {
     lastMatches = matches;
+    lastResultBundle = null;
     var box = $('result-box');
     if (!matches.length) {
       box.textContent = 'No matching lines. Try a shorter part of the name, or check the phone number. If this is a scanned PDF, text cannot be read.';
-    } else {
-      var html = matches.map(function(m) {
-        var safe = m.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return '<span class="match">p.' + m.page + '  ' + safe + '</span>';
-      }).join('\n');
-      box.innerHTML = html;
+      $('result-count').textContent = '0 matches';
+      $('result-wrap').style.display = 'block';
+      return;
     }
-    $('result-count').textContent = matches.length + ' line' + (matches.length === 1 ? '' : 's') + ' matched';
+    var enriched = matches.map(enrichMatch);
+    var part = partitionEnriched(enriched);
+    var sc = sumAmounts(part.credits);
+    var sd = sumAmounts(part.debits);
+    lastResultBundle = {
+      credits: part.credits,
+      debits: part.debits,
+      unknown: part.unknown,
+      sumCredit: sc.sum,
+      sumDebit: sd.sum,
+      nCredit: part.credits.length,
+      nDebit: part.debits.length,
+      nUnknown: part.unknown.length,
+      nCreditWithAmt: sc.withAmount,
+      nDebitWithAmt: sd.withAmount
+    };
+
+    var html = '';
+    html += '<div class="summary-strip">';
+    html += '<div class="summary-pill c"><div class="lbl">Total credited (parsed)</div><div class="val">' + formatINR(sc.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.credits.length + ' credit line(s)</div></div>';
+    html += '<div class="summary-pill d"><div class="lbl">Total debited (parsed)</div><div class="val">' + formatINR(sd.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.debits.length + ' debit line(s)</div></div>';
+    html += '</div>';
+
+    html += '<div class="tx-block"><h3 class="c">Credit transactions</h3>';
+    if (!part.credits.length) html += '<div class="tx-line u">No lines classified as credit (keywords: credit, cr, deposit, received…).</div>';
+    else html += part.credits.map(lineHtml).join('');
+    html += '</div>';
+
+    html += '<div class="tx-block"><h3 class="d">Debit transactions</h3>';
+    if (!part.debits.length) html += '<div class="tx-line u">No lines classified as debit (keywords: debit, dr, withdraw, paid to…).</div>';
+    else html += part.debits.map(lineHtml).join('');
+    html += '</div>';
+
+    if (part.unknown.length) {
+      html += '<div class="tx-block"><h3 class="u">Other (could not tell credit vs debit)</h3>';
+      html += part.unknown.map(lineHtml).join('');
+      html += '</div>';
+    }
+
+    html += '<div class="summary-final">';
+    html += '<h4>Summary</h4>';
+    html += '<div class="row"><span>Total amount credited <span class="muted">(sum of parsed amounts)</span></span><span>' + formatINR(sc.sum) + '</span></div>';
+    html += '<div class="row"><span>Total amount debited <span class="muted">(sum of parsed amounts)</span></span><span>' + formatINR(sd.sum) + '</span></div>';
+    html += '<div class="row"><span>Total credit transactions</span><span>' + part.credits.length + '</span></div>';
+    html += '<div class="row"><span>Total debit transactions</span><span>' + part.debits.length + '</span></div>';
+    if (part.unknown.length) {
+      html += '<div class="row"><span>Other / unclear lines</span><span>' + part.unknown.length + '</span></div>';
+    }
+    html += '<div class="row muted" style="font-weight:500;padding-top:10px;border-top:1px dashed #475569;margin-top:8px">Amounts are guessed from numbers on each line; your bank’s layout may differ. Verify against your statement.</div>';
+    html += '</div>';
+
+    box.innerHTML = html;
+    $('result-count').textContent = matches.length + ' matching line' + (matches.length === 1 ? '' : 's') + ' · ' + part.credits.length + ' credit · ' + part.debits.length + ' debit';
     $('result-wrap').style.display = 'block';
   }
 
@@ -530,7 +690,45 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       showStatus('No results to download.', false);
       return;
     }
-    var body = lastMatches.map(function(m) { return 'Page ' + m.page + '\t' + m.text; }).join('\n');
+    var body;
+    if (lastResultBundle) {
+      var b = lastResultBundle;
+      var lines = [];
+      lines.push('FILTERED BANK LINES — ' + originalName);
+      lines.push('');
+      lines.push('=== CREDIT TRANSACTIONS (' + b.nCredit + ') ===');
+      lines.push('Total credited (parsed sum): ' + formatINR(b.sumCredit));
+      lines.push('');
+      for (var i = 0; i < b.credits.length; i++) {
+        var c = b.credits[i];
+        lines.push('Page ' + c.page + '\t' + (c.amount != null ? c.amount : '') + '\t' + c.text);
+      }
+      lines.push('');
+      lines.push('=== DEBIT TRANSACTIONS (' + b.nDebit + ') ===');
+      lines.push('Total debited (parsed sum): ' + formatINR(b.sumDebit));
+      lines.push('');
+      for (var j = 0; j < b.debits.length; j++) {
+        var d = b.debits[j];
+        lines.push('Page ' + d.page + '\t' + (d.amount != null ? d.amount : '') + '\t' + d.text);
+      }
+      if (b.unknown.length) {
+        lines.push('');
+        lines.push('=== OTHER / UNCLEAR (' + b.nUnknown + ') ===');
+        for (var k = 0; k < b.unknown.length; k++) {
+          var u = b.unknown[k];
+          lines.push('Page ' + u.page + '\t' + (u.amount != null ? u.amount : '') + '\t' + u.text);
+        }
+      }
+      lines.push('');
+      lines.push('=== SUMMARY ===');
+      lines.push('Total amount credited (parsed): ' + formatINR(b.sumCredit));
+      lines.push('Total amount debited (parsed): ' + formatINR(b.sumDebit));
+      lines.push('Total credit transactions: ' + b.nCredit);
+      lines.push('Total debit transactions: ' + b.nDebit);
+      body = lines.join('\n');
+    } else {
+      body = lastMatches.map(function(m) { return 'Page ' + m.page + '\t' + m.text; }).join('\n');
+    }
     var base = originalName.replace(/\.pdf$/i, '') + '-filtered';
     var blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
     var a = document.createElement('a');
@@ -540,6 +738,19 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(a.href);
+  }
+
+  function pdfAddLines(doc, margin, w, lineH, y, lines) {
+    for (var i = 0; i < lines.length; i++) {
+      if (y > 780) { doc.addPage(); y = 50; }
+      var parts = doc.splitTextToSize(lines[i], w - margin * 2);
+      for (var p = 0; p < parts.length; p++) {
+        if (y > 780) { doc.addPage(); y = 50; }
+        doc.text(parts[p], margin, y);
+        y += lineH;
+      }
+    }
+    return y;
   }
 
   function downloadPdf() {
@@ -556,19 +767,59 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     var w = doc.internal.pageSize.getWidth();
     var margin = 40;
     var y = 50;
-    var lineH = 14;
+    var lineH = 13;
     doc.setFontSize(10);
     doc.text('Filtered transactions — ' + originalName, margin, y);
-    y += 22;
+    y += 20;
     doc.setFontSize(8.5);
-    for (var i = 0; i < lastMatches.length; i++) {
-      if (y > 780) { doc.addPage(); y = 50; }
-      var line = 'p.' + lastMatches[i].page + '  ' + lastMatches[i].text;
-      var parts = doc.splitTextToSize(line, w - margin * 2);
-      for (var p = 0; p < parts.length; p++) {
-        if (y > 780) { doc.addPage(); y = 50; }
-        doc.text(parts[p], margin, y);
-        y += lineH;
+
+    if (lastResultBundle) {
+      var b = lastResultBundle;
+      doc.setFontSize(9);
+      y = pdfAddLines(doc, margin, w, lineH, y, [
+        'Total credited (parsed): ' + formatINR(b.sumCredit) + '  |  Credit lines: ' + b.nCredit,
+        'Total debited (parsed): ' + formatINR(b.sumDebit) + '  |  Debit lines: ' + b.nDebit
+      ]);
+      y += 6;
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'bold');
+      y = pdfAddLines(doc, margin, w, lineH, y, ['CREDIT TRANSACTIONS']);
+      doc.setFont('helvetica', 'normal');
+      for (var ci = 0; ci < b.credits.length; ci++) {
+        var c = b.credits[ci];
+        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + c.page + '  ' + (c.amount != null ? formatINR(c.amount) + '  ' : '') + c.text]);
+      }
+      y += 4;
+      doc.setFont('helvetica', 'bold');
+      y = pdfAddLines(doc, margin, w, lineH, y, ['DEBIT TRANSACTIONS']);
+      doc.setFont('helvetica', 'normal');
+      for (var di = 0; di < b.debits.length; di++) {
+        var d = b.debits[di];
+        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + d.page + '  ' + (d.amount != null ? formatINR(d.amount) + '  ' : '') + d.text]);
+      }
+      if (b.unknown.length) {
+        y += 4;
+        doc.setFont('helvetica', 'bold');
+        y = pdfAddLines(doc, margin, w, lineH, y, ['OTHER / UNCLEAR']);
+        doc.setFont('helvetica', 'normal');
+        for (var ui = 0; ui < b.unknown.length; ui++) {
+          var u = b.unknown[ui];
+          y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + u.page + '  ' + (u.amount != null ? formatINR(u.amount) + '  ' : '') + u.text]);
+        }
+      }
+      y += 8;
+      doc.setFont('helvetica', 'bold');
+      y = pdfAddLines(doc, margin, w, lineH, y, [
+        'SUMMARY',
+        'Total credit transactions: ' + b.nCredit,
+        'Total debit transactions: ' + b.nDebit,
+        'Total credited (parsed): ' + formatINR(b.sumCredit),
+        'Total debited (parsed): ' + formatINR(b.sumDebit)
+      ]);
+      doc.setFont('helvetica', 'normal');
+    } else {
+      for (var i = 0; i < lastMatches.length; i++) {
+        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + lastMatches[i].page + '  ' + lastMatches[i].text]);
       }
     }
     var base = originalName.replace(/\.pdf$/i, '') + '-filtered';
