@@ -60,8 +60,10 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .status-ok{background:var(--ok-bg);color:#047857}
 .status-err{background:#fee2e2;color:#991b1b}
 .progress-wrap{display:none;margin-top:16px}
+.p-extract-hint{display:block;font-size:.82rem;color:var(--muted);margin-bottom:8px}
 .progress{height:8px;background:#e5e7eb;border-radius:100px;overflow:hidden}
 .progress-bar{height:100%;background:var(--primary);width:0%;transition:width .25s}
+#status.status-info{background:#eff6ff;color:#1e40af}
 footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
 footer a{color:#ffd166;font-weight:600;text-decoration:none}
 </style>
@@ -101,6 +103,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   </div>
 
   <div class="progress-wrap" id="progress-wrap">
+    <span class="p-extract-hint" id="p-hint">Extracting text from every page — the Find button will enable when this finishes.</span>
     <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
   </div>
 
@@ -132,13 +135,15 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   var originalName = 'statement.pdf';
   var allLines = []; /* { page, text, line } */
   var lastMatches = [];
+  var linesExtractionComplete = false;
   var $ = function(id) { return document.getElementById(id); };
 
   function showStatus(msg, ok) {
     var el = $('status');
     el.textContent = msg;
     el.style.display = 'block';
-    el.className = ok ? 'status-ok' : 'status-err';
+    if (ok === 'info') el.className = 'status-info';
+    else el.className = ok ? 'status-ok' : 'status-err';
   }
   function hideStatus() { $('status').style.display = 'none'; }
 
@@ -177,6 +182,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
 
   function extractAllLines() {
     allLines = [];
+    linesExtractionComplete = false;
     var n = pdfDoc.numPages;
     var p = 0;
     function step() {
@@ -188,6 +194,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
         var lines = buildLinesFromTextContent(tc, p);
         for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
         $('progress-bar').style.width = Math.round(100 * p / n) + '%';
+        if ($('p-hint')) $('p-hint').textContent = 'Extracting text… page ' + p + ' of ' + n;
         return step();
       });
     }
@@ -298,29 +305,43 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     }
     hideStatus();
     originalName = file.name;
+    linesExtractionComplete = false;
+    $('btn-filter').disabled = true;
+    if ($('p-hint')) $('p-hint').textContent = 'Extracting text from every page — the Find button will enable when this finishes.';
     var reader = new FileReader();
     reader.onload = function() {
       var buf = this.result;
-      var task = pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) });
+      var task = pdfjsLib.getDocument({
+        data: new Uint8Array(buf.slice(0)),
+        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+        cMapPacked: true
+      });
       task.promise.then(function(doc) {
         pdfDoc = doc;
         $('file-info').style.display = 'flex';
         $('fi-name').textContent = file.name;
         $('fi-size').textContent = (file.size / 1024).toFixed(1) + ' KB · ' + doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's');
         $('filter-panel').style.display = 'block';
-        $('btn-filter').disabled = false;
+        /* Keep Find disabled until extractAllLines() finishes (avoid empty allLines) */
+        $('btn-filter').disabled = true;
         $('result-wrap').style.display = 'none';
         $('progress-wrap').style.display = 'block';
         $('progress-bar').style.width = '0%';
+        showStatus('Reading the PDF. Please wait for the bar to finish before tapping Find…', 'info');
         return extractAllLines();
       }).then(function() {
+        linesExtractionComplete = true;
         $('progress-wrap').style.display = 'none';
+        hideStatus();
         if (!allLines.length) {
-          showStatus('No text found in this PDF. It may be a scanned (image) statement — this tool only works on text-based PDFs.', false);
+          $('btn-filter').disabled = true;
+          showStatus('No text found in this PDF. It may be a scanned (image) statement — download a text-based statement from your bank, not a photo/scan of a page.', false);
         } else {
+          $('btn-filter').disabled = false;
           showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
         }
       }).catch(function(e) {
+        linesExtractionComplete = false;
         $('progress-wrap').style.display = 'none';
         showStatus('Could not read PDF: ' + (e.message || e), false);
         pdfDoc = null;
@@ -336,8 +357,12 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
 
   $('btn-filter').addEventListener('click', function() {
     hideStatus();
+    if (!linesExtractionComplete) {
+      showStatus('Wait until the progress bar has finished and the green message says the file is ready — then tap Find again.', 'info');
+      return;
+    }
     if (!pdfDoc || !allLines.length) {
-      showStatus('Load a PDF with extractable text first.', false);
+      showStatus('This PDF has no text we could read (image-only or unusual layout). Use a “download e-statement” PDF from your bank, not a scanned photo.', false);
       return;
     }
     var persons = getPersonFields();
