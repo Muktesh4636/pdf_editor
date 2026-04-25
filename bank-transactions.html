@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Filter bank statement by name or phone — PDF | PDF Forge</title>
+<meta name="description" content="Upload a bank statement PDF, enter names (partial match) and optional phone numbers, and see only matching transactions. Multiple people. Runs in your browser."/>
+<link rel="canonical" href="https://pdf.pravoo.in/bank-transactions.html"/>
+<link rel="icon" href="/favicon.ico"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px;--ok:#059669;--ok-bg:#ecfdf5}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+nav{background:#fff;border-bottom:1px solid var(--border);padding:0 24px}
+.nav-inner{max-width:900px;margin:0 auto;height:56px;display:flex;align-items:center;gap:12px}
+.logo{font-size:1.1rem;font-weight:800;color:var(--primary);text-decoration:none}.logo span{color:var(--text)}
+.breadcrumb{color:var(--muted);font-size:.9rem}
+.breadcrumb a{color:var(--muted);text-decoration:none}.breadcrumb a:hover{color:var(--primary)}
+main{max-width:900px;margin:0 auto;padding:40px 24px 64px}
+h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
+.sub{color:var(--muted);margin-bottom:20px;font-size:.95rem}
+.drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
+.drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-icon{font-size:2.2rem;margin-bottom:10px}
+.drop-zone h2{font-size:1.05rem;font-weight:700;margin-bottom:4px}
+.drop-zone p{color:var(--muted);font-size:.86rem}
+.btn-pick{display:inline-block;margin-top:12px;background:var(--primary);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:.92rem;font-weight:700;cursor:pointer}.btn-pick:hover{background:#c92b2b}
+#file-input{display:none}
+.info-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:.85rem;color:#1e40af;margin-bottom:20px;line-height:1.55}
+.info-note strong{color:#1e3a8a}
+.file-info{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:10px}
+.fi-name{font-weight:700;flex:1;word-break:break-all}.fi-size{color:var(--muted);font-size:.82rem}
+.filter-panel{margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 18px}
+.filter-panel h2{font-size:1rem;font-weight:800;margin-bottom:14px}
+.person-row{display:grid;grid-template-columns:1fr;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:#fafbfc}
+@media(min-width:560px){
+  .person-row{grid-template-columns:1fr 1fr auto;align-items:end}
+}
+.person-row label{display:block;font-size:.78rem;font-weight:700;color:var(--muted);margin-bottom:4px}
+.person-row input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:.92rem}
+.person-row input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(232,64,64,.12)}
+.btn-remove{height:40px;align-self:end;background:#fee2e2;color:#991b1b;border:none;border-radius:8px;padding:0 12px;font-weight:700;cursor:pointer;font-size:.9rem;white-space:nowrap}
+.btn-remove:hover{background:#fecaca}
+.btn-add-person{margin-top:4px;background:none;border:1.5px dashed var(--primary);color:var(--primary);border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem;width:100%}
+.btn-add-person:hover{background:#fff5f5}
+.btn-filter{margin-top:18px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:1.05rem;font-weight:800;cursor:pointer;width:100%;transition:background .2s}
+.btn-filter:hover:not(:disabled){background:#c92b2b}
+.btn-filter:disabled{opacity:.45;cursor:not-allowed}
+.result-wrap{margin-top:24px;display:none}
+.result-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.result-count{font-size:.95rem;font-weight:800;color:var(--ok)}
+.result-box{background:#0f172a;color:#e2e8f0;border-radius:10px;padding:14px 16px;font-size:.82rem;line-height:1.55;max-height:min(50vh,420px);overflow:auto;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace}
+.result-line.match{background:rgba(5,150,105,.2);display:block;border-radius:4px;padding:0 2px;margin:2px 0}
+.out-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.out-actions button{flex:1;min-width:140px;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem}
+.btn-txt{background:#1e293b;color:#fff}.btn-txt:hover{background:#334155}
+.btn-pdf{background:var(--ok);color:#fff}.btn-pdf:hover{background:#047857}
+#status{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
+.status-ok{background:var(--ok-bg);color:#047857}
+.status-err{background:#fee2e2;color:#991b1b}
+.progress-wrap{display:none;margin-top:16px}
+.progress{height:8px;background:#e5e7eb;border-radius:100px;overflow:hidden}
+.progress-bar{height:100%;background:var(--primary);width:0%;transition:width .25s}
+footer{background:#1a1a2e;color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px}
+footer a{color:#ffd166;font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/"><span>PDF</span> Forge</a>
+    <span class="breadcrumb">/ <a href="/">Tools</a> / Bank transactions</span>
+  </div>
+</nav>
+<main>
+  <h1>🏦 Filter bank transactions</h1>
+  <p class="sub">Upload your bank statement PDF, add one or more people (name can be partial), optional phone numbers, and we show only lines that match. Everything runs in your browser.</p>
+
+  <div class="info-note">
+    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. Scanned (image-only) PDFs have no text to search — use a text-based statement or the bank’s “download PDF” (not a photo).</div>
+
+  <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Drop PDF or click to choose">
+    <div class="drop-icon">📄</div>
+    <h2>Drop bank statement PDF here</h2>
+    <p>or press the button to choose a file</p>
+    <button type="button" class="btn-pick" id="btn-pick">Choose PDF</button>
+  </div>
+  <input type="file" id="file-input" accept=".pdf,application/pdf"/>
+
+  <div class="file-info" id="file-info">
+    <span style="font-size:1.4rem" aria-hidden="true">📄</span>
+    <div><div class="fi-name" id="fi-name"></div><div class="fi-size" id="fi-size"></div></div>
+  </div>
+
+  <div class="filter-panel" id="filter-panel" style="display:none">
+    <h2>Who should we look for?</h2>
+    <div id="persons"></div>
+    <button type="button" class="btn-add-person" id="btn-add-person">+ Add another person</button>
+    <button type="button" class="btn-filter" id="btn-filter" disabled>Find matching transactions</button>
+  </div>
+
+  <div class="progress-wrap" id="progress-wrap">
+    <div class="progress"><div class="progress-bar" id="progress-bar"></div></div>
+  </div>
+
+  <div id="status"></div>
+
+  <div class="result-wrap" id="result-wrap">
+    <div class="result-head">
+      <span class="result-count" id="result-count">0 matches</span>
+    </div>
+    <div class="result-box" id="result-box" aria-live="polite"></div>
+    <div class="out-actions">
+      <button type="button" class="btn-txt" id="btn-txt">Download as .txt</button>
+      <button type="button" class="btn-pdf" id="btn-pdf">Download as PDF</button>
+    </div>
+  </div>
+</main>
+<footer>
+  <p><a href="/">PDF Forge</a> — <a href="/bank-transactions.html">Filter bank transactions</a></p>
+</footer>
+
+<script>
+(function() {
+  'use strict';
+  if (window.pdfjsLib) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+
+  var pdfDoc = null;
+  var originalName = 'statement.pdf';
+  var allLines = []; /* { page, text, line } */
+  var lastMatches = [];
+  var $ = function(id) { return document.getElementById(id); };
+
+  function showStatus(msg, ok) {
+    var el = $('status');
+    el.textContent = msg;
+    el.style.display = 'block';
+    el.className = ok ? 'status-ok' : 'status-err';
+  }
+  function hideStatus() { $('status').style.display = 'none'; }
+
+  function onlyDigits(s) {
+    return (s || '').replace(/\D/g, '');
+  }
+  function normName(s) {
+    return (s || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
+  function buildLinesFromTextContent(textContent, pageNum) {
+    var items = textContent.items;
+    if (!items || !items.length) return [];
+    var bucket = 2;
+    var map = new Map();
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      if (!item.str) continue;
+      var t = item.str.trim();
+      if (!t) continue;
+      var tr = item.transform;
+      var yk = Math.round(tr[5] / bucket) * bucket;
+      if (!map.has(yk)) map.set(yk, []);
+      map.get(yk).push({ s: t, x: tr[4] });
+    }
+    var keys = Array.from(map.keys()).sort(function(a, b) { return b - a; });
+    var out = [];
+    for (var k = 0; k < keys.length; k++) {
+      var row = map.get(keys[k]);
+      row.sort(function(a, b) { return a.x - b.x; });
+      var line = row.map(function(r) { return r.s; }).join(' ').replace(/\s+/g, ' ').trim();
+      if (line) out.push({ page: pageNum, text: line });
+    }
+    return out;
+  }
+
+  function extractAllLines() {
+    allLines = [];
+    var n = pdfDoc.numPages;
+    var p = 0;
+    function step() {
+      p++;
+      if (p > n) return Promise.resolve();
+      return pdfDoc.getPage(p).then(function(page) {
+        return page.getTextContent();
+      }).then(function(tc) {
+        var lines = buildLinesFromTextContent(tc, p);
+        for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
+        $('progress-bar').style.width = Math.round(100 * p / n) + '%';
+        return step();
+      });
+    }
+    return step();
+  }
+
+  function getPersonFields() {
+    var rows = document.querySelectorAll('.person-row');
+    var persons = [];
+    for (var r = 0; r < rows.length; r++) {
+      var nameIn = rows[r].querySelector('[data-field="name"]');
+      var phoneIn = rows[r].querySelector('[data-field="phone"]');
+      var name = (nameIn && nameIn.value) ? nameIn.value.trim() : '';
+      var phone = (phoneIn && phoneIn.value) ? onlyDigits(phoneIn.value) : '';
+      if (!name && !phone) continue;
+      var norm = normName(name);
+      persons.push({ name: name, norm: norm, phone: phone, phoneD: onlyDigits(phone) });
+    }
+    return persons;
+  }
+
+  function lineMatchesPerson(lineText, p) {
+    var lower = lineText.toLowerCase();
+    var dLine = onlyDigits(lineText);
+    var byName = p.norm && lower.indexOf(p.norm) >= 0;
+    var byPhone = false;
+    if (p.phoneD && p.phoneD.length >= 4) {
+      if (dLine.indexOf(p.phoneD) >= 0) byPhone = true;
+    }
+    if (p.norm && p.phoneD && p.phoneD.length >= 4) return byName || byPhone;
+    if (p.norm && !p.phoneD) return byName;
+    if (!p.norm && p.phoneD && p.phoneD.length >= 4) return byPhone;
+    return false;
+  }
+
+  function filterLines(persons) {
+    if (!persons.length) return [];
+    var matches = [];
+    for (var i = 0; i < allLines.length; i++) {
+      var L = allLines[i];
+      var t = L.text;
+      for (var j = 0; j < persons.length; j++) {
+        if (lineMatchesPerson(t, persons[j])) {
+          matches.push({ page: L.page, text: t });
+          break;
+        }
+      }
+    }
+    return matches;
+  }
+
+  function renderMatches(matches) {
+    lastMatches = matches;
+    var box = $('result-box');
+    if (!matches.length) {
+      box.textContent = 'No matching lines. Try a shorter part of the name, or check the phone number. If this is a scanned PDF, text cannot be read.';
+    } else {
+      var html = matches.map(function(m) {
+        var safe = m.text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return '<span class="match">p.' + m.page + '  ' + safe + '</span>';
+      }).join('\n');
+      box.innerHTML = html;
+    }
+    $('result-count').textContent = matches.length + ' line' + (matches.length === 1 ? '' : 's') + ' matched';
+    $('result-wrap').style.display = 'block';
+  }
+
+  function addPersonRow() {
+    var div = document.createElement('div');
+    div.className = 'person-row';
+    var idx = document.querySelectorAll('.person-row').length + 1;
+    div.innerHTML =
+      '<div><label>Name (partial is OK)</label><input type="text" data-field="name" placeholder="e.g. Kumar, Ravi, Sh"/></div>' +
+      '<div><label>Phone (optional)</label><input type="text" data-field="phone" inputmode="numeric" placeholder="e.g. 98xxxx or last 4 digits" autocomplete="off"/></div>' +
+      (idx > 1 ? '<button type="button" class="btn-remove" aria-label="Remove">Remove</button>' : '<div></div>');
+    $('persons').appendChild(div);
+    var rm = div.querySelector('.btn-remove');
+    if (rm) {
+      rm.addEventListener('click', function() {
+        if (document.querySelectorAll('.person-row').length <= 1) return;
+        div.parentNode.removeChild(div);
+      });
+    }
+  }
+
+  addPersonRow();
+
+  $('drop-zone').addEventListener('click', function(e) {
+    if (e.target.id === 'btn-pick' || e.target.closest && e.target.closest('.btn-pick')) return;
+    $('file-input').click();
+  });
+  $('btn-pick').addEventListener('click', function(e) { e.stopPropagation(); $('file-input').click(); });
+  ['dragover', 'dragleave', 'drop'].forEach(function(ev) {
+    $('drop-zone').addEventListener(ev, function(e) {
+      e.preventDefault();
+      $('drop-zone').classList.toggle('over', ev === 'dragover');
+      if (ev === 'drop' && e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]);
+    });
+  });
+  $('file-input').addEventListener('change', function() {
+    if (this.files[0]) loadPdf(this.files[0]);
+  });
+
+  function loadPdf(file) {
+    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
+      showStatus('Please choose a PDF file.', false);
+      return;
+    }
+    hideStatus();
+    originalName = file.name;
+    var reader = new FileReader();
+    reader.onload = function() {
+      var buf = this.result;
+      var task = pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) });
+      task.promise.then(function(doc) {
+        pdfDoc = doc;
+        $('file-info').style.display = 'flex';
+        $('fi-name').textContent = file.name;
+        $('fi-size').textContent = (file.size / 1024).toFixed(1) + ' KB · ' + doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's');
+        $('filter-panel').style.display = 'block';
+        $('btn-filter').disabled = false;
+        $('result-wrap').style.display = 'none';
+        $('progress-wrap').style.display = 'block';
+        $('progress-bar').style.width = '0%';
+        return extractAllLines();
+      }).then(function() {
+        $('progress-wrap').style.display = 'none';
+        if (!allLines.length) {
+          showStatus('No text found in this PDF. It may be a scanned (image) statement — this tool only works on text-based PDFs.', false);
+        } else {
+          showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
+        }
+      }).catch(function(e) {
+        $('progress-wrap').style.display = 'none';
+        showStatus('Could not read PDF: ' + (e.message || e), false);
+        pdfDoc = null;
+        $('filter-panel').style.display = 'none';
+        $('file-info').style.display = 'none';
+        $('btn-filter').disabled = true;
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  $('btn-add-person').addEventListener('click', addPersonRow);
+
+  $('btn-filter').addEventListener('click', function() {
+    hideStatus();
+    if (!pdfDoc || !allLines.length) {
+      showStatus('Load a PDF with extractable text first.', false);
+      return;
+    }
+    var persons = getPersonFields();
+    if (!persons.length) {
+      showStatus('Enter at least one name or phone number.', false);
+      return;
+    }
+    for (var i = 0; i < persons.length; i++) {
+      if (persons[i].phoneD && persons[i].phoneD.length < 4) {
+        showStatus('Use at least 4 digits for a phone, or leave phone empty.', false);
+        return;
+      }
+    }
+    var matches = filterLines(persons);
+    renderMatches(matches);
+    if (matches.length === 0) {
+      showStatus('No lines matched. Try a different part of the name or phone.', false);
+    } else {
+      showStatus('Found ' + matches.length + ' matching line(s).', true);
+    }
+  });
+
+  function downloadText() {
+    if (!lastMatches.length) {
+      showStatus('No results to download.', false);
+      return;
+    }
+    var body = lastMatches.map(function(m) { return 'Page ' + m.page + '\t' + m.text; }).join('\n');
+    var base = originalName.replace(/\.pdf$/i, '') + '-filtered';
+    var blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = base + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
+
+  function downloadPdf() {
+    if (!lastMatches.length) {
+      showStatus('No results to download.', false);
+      return;
+    }
+    var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDF) {
+      showStatus('PDF library not loaded. Use Download as .txt instead.', false);
+      return;
+    }
+    var doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    var w = doc.internal.pageSize.getWidth();
+    var margin = 40;
+    var y = 50;
+    var lineH = 14;
+    doc.setFontSize(10);
+    doc.text('Filtered transactions — ' + originalName, margin, y);
+    y += 22;
+    doc.setFontSize(8.5);
+    for (var i = 0; i < lastMatches.length; i++) {
+      if (y > 780) { doc.addPage(); y = 50; }
+      var line = 'p.' + lastMatches[i].page + '  ' + lastMatches[i].text;
+      var parts = doc.splitTextToSize(line, w - margin * 2);
+      for (var p = 0; p < parts.length; p++) {
+        if (y > 780) { doc.addPage(); y = 50; }
+        doc.text(parts[p], margin, y);
+        y += lineH;
+      }
+    }
+    var base = originalName.replace(/\.pdf$/i, '') + '-filtered';
+    doc.save(base + '.pdf');
+  }
+
+  $('btn-txt').addEventListener('click', downloadText);
+  $('btn-pdf').addEventListener('click', downloadPdf);
+})();
+</script>
+</body>
+</html>
