@@ -154,29 +154,71 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return (s || '').trim().replace(/\s+/g, ' ').toLowerCase();
   }
 
-  function buildLinesFromTextContent(textContent, pageNum) {
+  /**
+   * Group text into lines. Many bank PDFs use nested transforms: raw tr[4]/tr[5] is wrong
+   * for sorting — use the same transform as the PDF.js text layer (viewport × item).
+   * Fall back: stream order with hasEOL, then all text on one line per page.
+   */
+  function buildLinesFromTextContent(textContent, pageNum, page) {
     var items = textContent.items;
     if (!items || !items.length) return [];
-    var bucket = 2;
+    var out = [];
+    var viewport = page.getViewport({ scale: 1 });
+    var bucket = 4;
     var map = new Map();
+    var u = typeof pdfjsLib !== 'undefined' && pdfjsLib.Util ? pdfjsLib.Util : null;
+
     for (var i = 0; i < items.length; i++) {
       var item = items[i];
       if (!item.str) continue;
       var t = item.str.trim();
       if (!t) continue;
       var tr = item.transform;
-      var yk = Math.round(tr[5] / bucket) * bucket;
+      var x = tr[4];
+      var y = tr[5];
+      if (u) {
+        try {
+          var tx2 = u.transform(viewport.transform, tr);
+          if (isFinite(tx2[4]) && isFinite(tx2[5])) {
+            x = tx2[4];
+            y = tx2[5];
+          }
+        } catch (ignore) {}
+      }
+      var yk = Math.round(y / bucket) * bucket;
+      if (!isFinite(yk)) yk = 0;
       if (!map.has(yk)) map.set(yk, []);
-      map.get(yk).push({ s: t, x: tr[4] });
+      map.get(yk).push({ s: t, x: x });
     }
     var keys = Array.from(map.keys()).sort(function(a, b) { return b - a; });
-    var out = [];
     for (var k = 0; k < keys.length; k++) {
       var row = map.get(keys[k]);
       row.sort(function(a, b) { return a.x - b.x; });
       var line = row.map(function(r) { return r.s; }).join(' ').replace(/\s+/g, ' ').trim();
       if (line) out.push({ page: pageNum, text: line });
     }
+    if (out.length) return out;
+
+    /* hasEOL: native line breaks in reading order */
+    var buf = [];
+    for (i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (it.str) buf.push(it.str);
+      if (it.hasEOL) {
+        var ln = buf.join('').replace(/[ \t]+/g, ' ').replace(/\n+/g, ' ').trim();
+        buf = [];
+        if (ln) out.push({ page: pageNum, text: ln });
+      }
+    }
+    if (buf.length) {
+      var ln2 = buf.join('').replace(/[ \t]+/g, ' ').replace(/\n+/g, ' ').trim();
+      if (ln2) out.push({ page: pageNum, text: ln2 });
+    }
+    if (out.length) return out;
+
+    /* last resort: one blob per page (still filterable) */
+    var all = items.map(function(it) { return it.str || ''; }).join(' ').replace(/\s+/g, ' ').trim();
+    if (all) out.push({ page: pageNum, text: all });
     return out;
   }
 
@@ -191,7 +233,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       return pdfDoc.getPage(p).then(function(page) {
         return page.getTextContent();
       }).then(function(tc) {
-        var lines = buildLinesFromTextContent(tc, p);
+        var lines = buildLinesFromTextContent(tc, p, page);
         for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
         $('progress-bar').style.width = Math.round(100 * p / n) + '%';
         if ($('p-hint')) $('p-hint').textContent = 'Extracting text… page ' + p + ' of ' + n;
@@ -314,7 +356,9 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       var task = pdfjsLib.getDocument({
         data: new Uint8Array(buf.slice(0)),
         cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-        cMapPacked: true
+        cMapPacked: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+        useSystemFonts: true
       });
       task.promise.then(function(doc) {
         pdfDoc = doc;
@@ -335,7 +379,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
         hideStatus();
         if (!allLines.length) {
           $('btn-filter').disabled = true;
-          showStatus('No text found in this PDF. It may be a scanned (image) statement — download a text-based statement from your bank, not a photo/scan of a page.', false);
+          showStatus('No text could be read from this file. It is usually a scanned photo, a password-protected layer, or the bank’s “PDF” is picture-only. Try: in your bank app choose email/SMS e-statement download (not a screenshot), or “Download as text/CSV/Excel” if available. In Adobe or your phone, try selecting the words — if you cannot select any text, this tool cannot search it (no secure OCR in-browser here).', false);
         } else {
           $('btn-filter').disabled = false;
           showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
@@ -362,7 +406,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       return;
     }
     if (!pdfDoc || !allLines.length) {
-      showStatus('This PDF has no text we could read (image-only or unusual layout). Use a “download e-statement” PDF from your bank, not a scanned photo.', false);
+      showStatus('No text is loaded for this file. Re-upload the PDF and wait for “Loaded N text lines”. If that never appears, the PDF has no real text to search (see the red message).', false);
       return;
     }
     var persons = getPersonFields();
