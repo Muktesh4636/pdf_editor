@@ -272,6 +272,13 @@
       display: flex; align-items: flex-start; gap: 0.5rem;
       line-height: 1.45;
     }
+    .scan-notice {
+      background: #fff7ed; border-bottom: 1px solid #fdba74;
+      color: #9a3412;
+      padding: 0.55rem max(0.75rem, env(safe-area-inset-left)) 0.55rem max(0.75rem, env(safe-area-inset-right));
+      font-size: 0.78rem; line-height: 1.5;
+    }
+    .scan-notice strong { color: #7c2d12; }
     .hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 5px; }
 
     .pages-area {
@@ -405,7 +412,7 @@
       font-size: 0.85rem; color: var(--muted); line-height: 1.6;
       padding: 0 1rem;
     }
-    .faq-item.open .faq-a { max-height: 200px; padding: 0 1rem 0.8rem; }
+    .faq-item.open .faq-a { max-height: 480px; padding: 0 1rem 0.8rem; }
 
     /* -------- Mobile & touch -------- */
     @media (max-width: 768px) {
@@ -501,6 +508,12 @@
       </button>
       <div class="faq-a">PDF Editor works on all modern browsers: Chrome, Firefox, Safari, and Edge, on both desktop and mobile devices.</div>
     </div>
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
+        Can I edit handwritten text and keep the same handwriting? <span class="faq-arrow">&#9660;</span>
+      </button>
+      <div class="faq-a">This editor only changes real PDF text (fonts that the file stores as text). Most handwriting and scanned writing is stored as a picture, not as letters — the browser cannot &quot;analyse&quot; and recreate your personal writing. For that you would need dedicated handwriting software or machine-learning tools, not a simple website. If your PDF is a photo of handwriting, use <strong>Stamp / Sign</strong> to add an image, or re-type with a cursive font for an approximate look.</div>
+    </div>
   </section>
 </div>
 
@@ -520,6 +533,9 @@
   <div class="hint-bar">
     <span class="hint-dot"></span>
     Click any text to edit &nbsp;&mdash;&nbsp; Click <strong>Save &amp; Download</strong> when done
+  </div>
+  <div class="scan-notice" id="scan-notice" style="display:none">
+    <strong>Scans &amp; handwriting as images:</strong> This tool edits PDF <em>text</em> only. If the page is a photo/scan of handwriting, there is nothing to click — use <strong>Stamp / Sign</strong> to overlay an image, or re-type. Automatically matching your handwriting is not available in a browser editor.
   </div>
   <div class="pages-area" id="pages-area"></div>
 </div>
@@ -941,9 +957,12 @@
       hideLoading();
       var txCount = document.querySelectorAll('.tx, .ann-field').length;
       var isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      var sn = $('scan-notice');
       if (txCount === 0) {
-        toast('No editable text found. This appears to be a scanned PDF — only the Stamp/Sign tool works on it.', 'info');
+        if (sn) sn.style.display = 'block';
+        toast('No PDF text found (often scans or handwriting as an image). Use Stamp/Sign, or re-type. See the yellow note below.', 'info');
       } else {
+        if (sn) sn.style.display = 'none';
         toast('Loaded ' + pdfJsDoc.numPages + ' page(s) — ' + txCount + ' text area' + (txCount !== 1 ? 's' : '') + ' found. Tap any to edit.', 'success');
         /* On touch screens auto-enable highlight so tiny text areas are visible */
         if (isTouchDevice && !highlightOn) toggleHighlight();
