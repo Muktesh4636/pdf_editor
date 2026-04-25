@@ -231,13 +231,13 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       p++;
       if (p > n) return Promise.resolve();
       return pdfDoc.getPage(p).then(function(page) {
-        return page.getTextContent();
-      }).then(function(tc) {
-        var lines = buildLinesFromTextContent(tc, p, page);
-        for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
-        $('progress-bar').style.width = Math.round(100 * p / n) + '%';
-        if ($('p-hint')) $('p-hint').textContent = 'Extracting text… page ' + p + ' of ' + n;
-        return step();
+        return page.getTextContent().then(function(tc) {
+          var lines = buildLinesFromTextContent(tc, p, page);
+          for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
+          $('progress-bar').style.width = Math.round(100 * p / n) + '%';
+          if ($('p-hint')) $('p-hint').textContent = 'Extracting text… page ' + p + ' of ' + n;
+          return step();
+        });
       });
     }
     return step();
