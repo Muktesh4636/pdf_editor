@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Filter bank statement by name or phone — PDF | PDF Forge</title>
-<meta name="description" content="Upload a bank statement PDF, enter names (partial match) and optional phone numbers, and see only matching transactions. Multiple people. Runs in your browser."/>
+<meta name="description" content="Upload one or more bank statement PDFs, enter names (partial match) and optional phone numbers, and see only matching transactions. Multiple people. Runs in your browser."/>
 <link rel="canonical" href="https://pdf.pravoo.in/bank-transactions.html"/>
 <link rel="icon" href="/favicon.ico"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--primary:#e84040;--bg:#f7f8fc;--card:#fff;--text:#1a1a2e;--muted:#6b7280;--border:#e5e7eb;--radius:12px;--ok:#059669;--ok-bg:#ecfdf5}
@@ -22,6 +23,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .sub{color:var(--muted);margin-bottom:20px;font-size:.95rem}
 .drop-zone{border:2.5px dashed var(--border);border-radius:var(--radius);padding:40px 24px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s;background:#fff}
 .drop-zone:hover,.drop-zone.over{border-color:var(--primary);background:#fff5f5}
+.drop-hint{font-size:.82rem;color:var(--muted);margin-top:12px;line-height:1.5;max-width:520px;margin-left:auto;margin-right:auto}
 .drop-icon{font-size:2.2rem;margin-bottom:10px}
 .drop-zone h2{font-size:1.05rem;font-weight:700;margin-bottom:4px}
 .drop-zone p{color:var(--muted);font-size:.86rem}
@@ -29,8 +31,21 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 #file-input{display:none}
 .info-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 16px;font-size:.85rem;color:#1e40af;margin-bottom:20px;line-height:1.55}
 .info-note strong{color:#1e3a8a}
-.file-info{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:none;align-items:center;gap:10px}
-.fi-name{font-weight:700;flex:1;word-break:break-all}.fi-size{color:var(--muted);font-size:.82rem}
+.file-info{margin-top:16px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:none;align-items:flex-start;gap:12px}
+.file-info-body{flex:1;min-width:0}
+.fi-summary{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline;margin-bottom:10px;font-size:.88rem}
+.fi-summary #fi-count{font-weight:800}
+.fi-size{color:var(--muted);font-size:.82rem}
+.pdf-file-list{display:flex;flex-direction:column;gap:8px}
+.pdf-file-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:8px 10px;background:#f8fafc;border:1px solid var(--border);border-radius:8px;font-size:.85rem}
+.pdf-file-name{font-weight:600;flex:1;min-width:120px;word-break:break-word}
+.pdf-file-meta{color:var(--muted);font-size:.8rem;white-space:nowrap}
+.btn-remove-pdf{background:#fee2e2;color:#991b1b;border:none;border-radius:6px;padding:6px 12px;font-weight:700;cursor:pointer;font-size:.78rem;white-space:nowrap}
+.btn-remove-pdf:hover:not(:disabled){background:#fecaca}
+.btn-remove-pdf:disabled{opacity:.45;cursor:not-allowed}
+.btn-add-more-pdfs{margin-top:10px;width:100%;background:none;border:1.5px dashed var(--primary);color:var(--primary);border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.92rem;display:none}
+.btn-add-more-pdfs:hover:not(:disabled){background:#fff5f5}
+.btn-add-more-pdfs:disabled{opacity:.5;cursor:not-allowed}
 .filter-panel{margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 18px}
 .filter-panel h2{font-size:1rem;font-weight:800;margin-bottom:14px}
 .person-row{display:grid;grid-template-columns:1fr;gap:10px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;margin-bottom:10px;background:#fafbfc}
@@ -44,6 +59,17 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .btn-remove:hover{background:#fecaca}
 .btn-add-person{margin-top:4px;background:none;border:1.5px dashed var(--primary);color:var(--primary);border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem;width:100%}
 .btn-add-person:hover{background:#fff5f5}
+.pdf-pw-section{margin-top:14px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:14px 16px;display:none}
+.pdf-pw-section.pw-unlock-only{background:#ecfdf5;border-color:#6ee7b7;padding:12px 16px}
+.pdf-pw-section label{display:block;font-size:.82rem;font-weight:700;margin-bottom:6px;color:#92400e}
+.pdf-pw-row{display:flex;flex-wrap:wrap;gap:10px;align-items:stretch}
+.pdf-pw-row input{flex:1;min-width:160px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.95rem}
+.btn-pw{background:#b45309;color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:800;cursor:pointer;font-size:.9rem;white-space:nowrap}
+.btn-pw:hover{background:#92400e}
+.pdf-pw-hint{font-size:.78rem;color:#a16207;margin-top:10px;line-height:1.45}
+.btn-unlocked{margin-top:10px;background:#0f766e;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.88rem;width:100%;display:none}
+.pdf-pw-section.pw-unlock-only .btn-unlocked{margin-top:0}
+.btn-unlocked:hover{background:#115e59}
 .btn-filter{margin-top:18px;background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 28px;font-size:1.05rem;font-weight:800;cursor:pointer;width:100%;transition:background .2s}
 .btn-filter:hover:not(:disabled){background:#c92b2b}
 .btn-filter:disabled{opacity:.45;cursor:not-allowed}
@@ -58,6 +84,17 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .summary-pill.d{border-left:3px solid #f43f5e}
 .summary-pill .lbl{font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:#94a3b8;margin-bottom:4px}
 .summary-pill .val{font-size:1rem;font-weight:800;color:#f1f5f9}
+.filter-scope-note{background:#1e3a5f;color:#e0f2fe;border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:.85rem;line-height:1.5;border:1px solid #334155}
+.filter-scope-note .scope-sub{display:block;margin-top:6px;color:#93c5fd;font-size:.8rem}
+.per-person-heading{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:#94a3b8;margin:12px 0 8px;font-weight:800}
+.per-person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px}
+.per-person-card{background:#1e293b;border-radius:8px;padding:10px 12px;border:1px solid #334155}
+.per-person-card .pp-name{font-weight:800;color:#f1f5f9;margin-bottom:8px;font-size:.88rem}
+.per-person-card .pp-row{display:flex;justify-content:space-between;gap:8px;font-size:.8rem;padding:4px 0;border-top:1px solid #334155}
+.per-person-card .pp-row:first-of-type{border-top:none;padding-top:0}
+.per-person-card .pp-row.c{color:#6ee7b7}
+.per-person-card .pp-row.d{color:#fda4af}
+.per-person-card .pp-row.u{color:#94a3b8}
 .tx-block{margin-top:14px}
 .tx-block h3{font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #334155}
 .tx-block h3.c{color:#6ee7b7}
@@ -65,6 +102,7 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .tx-block h3.u{color:#cbd5e1}
 .tx-line{display:block;border-radius:4px;padding:6px 8px;margin:4px 0;line-height:1.45;background:rgba(30,41,59,.6);border:1px solid #334155}
 .tx-line .pg{opacity:.65;font-size:.75rem;margin-right:6px}
+.tx-line .tx-date{opacity:.9;font-size:.75rem;margin-right:6px;color:#a5b4fc;white-space:nowrap}
 .tx-line .amt{float:right;font-weight:700;color:#fde68a;margin-left:8px}
 .tx-line.c{border-left:3px solid #10b981}
 .tx-line.d{border-left:3px solid #f43f5e}
@@ -100,22 +138,39 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
 </nav>
 <main>
   <h1>🏦 Filter bank transactions</h1>
-  <p class="sub">Upload your bank statement PDF, add one or more people (name can be partial), optional phone numbers, and we show only lines that match. Everything runs in your browser.</p>
+  <p class="sub">Upload one or more bank statement PDFs (combined into one search), add one or more people (name can be partial), optional phone numbers, and we show only lines that match. Everything runs in your browser.</p>
 
   <div class="info-note">
-    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. After filtering, lines are split into <strong>credit</strong> vs <strong>debit</strong> using common keywords (Cr/Dr, deposit, withdraw, UPI, etc.) and amounts are estimated from numbers on each line — <strong>verify totals with your bank.</strong> <strong>Scanned PDFs:</strong> we run <strong>OCR</strong> in your browser when there is no text layer (English; first run ~10–15 MB).</div>
+    <strong>How matching works</strong> — for each person, a line is kept if the <em>name text appears anywhere</em> in that line (not case-sensitive), or the <em>phone number</em> appears (digits only, partial OK). You can add several people: a line is shown if it matches <strong>any</strong> of them. <strong>Multiple PDFs</strong> are combined: every uploaded file is read and <strong>Find</strong> shows matching transactions from <strong>all</strong> of them (each hit shows which file it came from). <strong>Password PDFs:</strong> if a file is protected, a password box appears only then; we decrypt in your browser. You can download <strong>unlocked copies</strong> after they load. <strong>Amounts</strong> try to ignore long UPI/ID numbers; <strong>dates</strong> appear only if that PDF line actually contains a date. After filtering, credit/debit splits use keywords — <strong>verify with your bank.</strong> <strong>Scanned PDFs:</strong> <strong>OCR</strong> runs when there is no text layer (English; first run ~10–15 MB). OCR is capped at <strong>45 pages total</strong> across all files in one batch.</div>
 
-  <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Drop PDF or click to choose">
+  <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Drop one or more PDFs or click to choose">
     <div class="drop-icon">📄</div>
-    <h2>Drop bank statement PDF here</h2>
-    <p>or press the button to choose a file</p>
-    <button type="button" class="btn-pick" id="btn-pick">Choose PDF</button>
+    <h2>Drop bank statement PDF(s) here</h2>
+    <p>or press the button to choose one or more files</p>
+    <button type="button" class="btn-pick" id="btn-pick">Choose PDF(s)</button>
+    <p class="drop-hint"><strong>Several statements:</strong> use <strong>Ctrl+click</strong> / <strong>Cmd+click</strong> in the dialog, or drag in multiple PDFs. Each file appears in a list with <strong>Remove</strong> so you can drop one from the batch. <strong>Find</strong> searches all listed files.</p>
   </div>
-  <input type="file" id="file-input" accept=".pdf,application/pdf"/>
+  <input type="file" id="file-input" accept=".pdf,application/pdf" multiple/>
 
   <div class="file-info" id="file-info">
-    <span style="font-size:1.4rem" aria-hidden="true">📄</span>
-    <div><div class="fi-name" id="fi-name"></div><div class="fi-size" id="fi-size"></div></div>
+    <span style="font-size:1.4rem;flex-shrink:0" aria-hidden="true">📄</span>
+    <div class="file-info-body">
+      <div class="fi-summary"><span id="fi-count"></span><span class="fi-size" id="fi-size"></span></div>
+      <div id="pdf-file-list" class="pdf-file-list"></div>
+    </div>
+  </div>
+  <button type="button" class="btn-add-more-pdfs" id="btn-add-more-pdfs" disabled>+ Add more PDFs (merge into this search)</button>
+
+  <div class="pdf-pw-section" id="pdf-pw-section" style="display:none" aria-live="polite">
+    <div id="pdf-pw-prompt">
+      <label for="pdf-password">This PDF needs an open password</label>
+      <div class="pdf-pw-row">
+        <input type="password" id="pdf-password" autocomplete="off" placeholder="Same as in Adobe or your bank app"/>
+        <button type="button" class="btn-pw" id="btn-pdf-reload">Unlock &amp; load</button>
+      </div>
+      <p class="pdf-pw-hint">We try the same password on every file in this batch. Nothing is sent to our server. After it loads, use the button below for a copy without a password (one PDF or a ZIP if you chose several).</p>
+    </div>
+    <button type="button" class="btn-unlocked" id="btn-unlocked-pdf" style="display:none">⬇ Download unlocked PDF (no password)</button>
   </div>
 
   <div class="filter-panel" id="filter-panel" style="display:none">
@@ -154,13 +209,18 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
   }
 
-  var pdfDoc = null;
   var originalName = 'statement.pdf';
   var allLines = []; /* { page, text, line } */
   var lastMatches = [];
   var lastResultBundle = null;
   var linesExtractionComplete = false;
   var lastExtractUsedOcr = false;
+  var lastPdfU8List = [];
+  var pendingFiles = [];
+  var pdfDocs = [];
+  var usedPdfPasswordForOpen = false;
+  var pickPdfsAppendMode = false;
+  var pipelineInFlight = false;
   var $ = function(id) { return document.getElementById(id); };
 
   function showStatus(msg, ok) {
@@ -247,20 +307,28 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return out;
   }
 
-  function extractAllLines() {
-    allLines = [];
-    linesExtractionComplete = false;
-    var n = pdfDoc.numPages;
+  function extractAllLinesFromDoc(doc, meta) {
+    var n = doc.numPages;
     var p = 0;
+    var totalFiles = meta.totalFiles || 1;
+    var fileIdx = meta.fileIndex || 0;
+    var fileName = meta.fileName || originalName;
     function step() {
       p++;
       if (p > n) return Promise.resolve();
-      return pdfDoc.getPage(p).then(function(page) {
+      return doc.getPage(p).then(function(page) {
         return page.getTextContent().then(function(tc) {
           var lines = buildLinesFromTextContent(tc, p, page);
-          for (var i = 0; i < lines.length; i++) allLines.push(lines[i]);
-          $('progress-bar').style.width = Math.round(100 * p / n) + '%';
-          if ($('p-hint')) $('p-hint').textContent = 'Extracting text… page ' + p + ' of ' + n;
+          for (var i = 0; i < lines.length; i++) {
+            allLines.push({ page: p, text: lines[i].text, fileIndex: fileIdx, fileName: fileName });
+          }
+          var fileShare = 100 / totalFiles;
+          $('progress-bar').style.width = Math.min(99, Math.round(fileShare * fileIdx + fileShare * (p / n))) + '%';
+          if ($('p-hint')) {
+            $('p-hint').textContent = totalFiles > 1
+              ? ('Extracting file ' + (fileIdx + 1) + '/' + totalFiles + ' — page ' + p + '/' + n)
+              : ('Extracting text… page ' + p + ' of ' + n);
+          }
           return step();
         });
       });
@@ -282,23 +350,26 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
 
   /**
    * Image-only / scanned PDFs: render each page and run Tesseract (English).
-   * Slow; caps page count for browser stability.
+   * Appends to allLines. ocrState.used tracks pages OCR'd across all PDFs in a batch (cap total).
    */
-  function extractAllLinesViaOcr(doc) {
-    var OCR_MAX_PAGES = 45;
+  function extractAllLinesViaOcr(doc, meta, ocrState) {
+    var OCR_MAX_TOTAL = 45;
+    var totalFiles = meta.totalFiles || 1;
+    var fileIdx = meta.fileIndex || 0;
+    var fileName = meta.fileName || originalName;
     return loadTesseractScript().then(function() {
       var n = doc.numPages;
-      if (n > OCR_MAX_PAGES) {
-        throw new Error('This PDF has ' + n + ' pages. OCR is limited to ' + OCR_MAX_PAGES + ' pages in the browser. Remove extra pages or split the file, then try again.');
+      if (ocrState.used + n > OCR_MAX_TOTAL) {
+        throw new Error('OCR is limited to ' + OCR_MAX_TOTAL + ' pages total across all PDFs (' + ocrState.used + ' already used). This file has ' + n + ' pages. Split or remove some PDFs.');
       }
-      allLines = [];
       var workerOpts = {
         workerPath: 'https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/worker.min.js',
         corePath: 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.0.0/',
         logger: function(m) {
           if (m.status === 'recognizing text' && typeof m.progress === 'number' && m.progress >= 0) {
             var pageIdx = typeof m.page === 'number' ? m.page : 1;
-            var pct = 100 * ((pageIdx - 1) + m.progress) / n;
+            var fileShare = 100 / totalFiles;
+            var pct = fileShare * fileIdx + fileShare * ((pageIdx - 1) + m.progress) / n;
             $('progress-bar').style.width = Math.min(99, Math.round(pct)) + '%';
           }
         }
@@ -308,10 +379,13 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       var n = doc.numPages;
       function runPage(p) {
         if (p > n) {
+          ocrState.used += n;
           return worker.terminate().then(function() { return null; });
         }
         if ($('p-hint')) {
-          $('p-hint').textContent = 'OCR page ' + p + ' of ' + n + ' (first visit may download language data)…';
+          $('p-hint').textContent = totalFiles > 1
+            ? ('OCR file ' + (fileIdx + 1) + '/' + totalFiles + ' — page ' + p + '/' + n + '…')
+            : ('OCR page ' + p + ' of ' + n + ' (first visit may download language data)…');
         }
         return doc.getPage(p).then(function(page) {
           var v1 = page.getViewport({ scale: 1 });
@@ -331,9 +405,12 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
             var rawLines = textBlock.split(/\r?\n/);
             for (var li = 0; li < rawLines.length; li++) {
               var line = rawLines[li].replace(/[ \t]+/g, ' ').trim();
-              if (line.length) allLines.push({ page: p, text: line, ocr: true });
+              if (line.length) {
+                allLines.push({ page: p, text: line, ocr: true, fileIndex: fileIdx, fileName: fileName });
+              }
             }
-            $('progress-bar').style.width = Math.round(100 * p / n) + '%';
+            var fileShare = 100 / totalFiles;
+            $('progress-bar').style.width = Math.min(99, Math.round(fileShare * fileIdx + fileShare * (p / n))) + '%';
             return runPage(p + 1);
           }).catch(function(err) {
             return worker.terminate().then(function() {
@@ -361,6 +438,15 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return persons;
   }
 
+  /** Short label for UI / exports (one row in “Who should we look for?”). */
+  function personLabel(p) {
+    var n = (p.name || '').trim();
+    if (n && p.phoneD && p.phoneD.length >= 4) return n + ' · …' + p.phoneD.slice(-4);
+    if (n) return n;
+    if (p.phoneD && p.phoneD.length >= 4) return 'Phone …' + p.phoneD.slice(-4);
+    return '—';
+  }
+
   function lineMatchesPerson(lineText, p) {
     var lower = lineText.toLowerCase();
     var dLine = onlyDigits(lineText);
@@ -375,6 +461,48 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return false;
   }
 
+  /**
+   * Many bank PDFs split one transaction across several lines (UPI ref on one line, date/amount on others).
+   * Join neighbouring lines on the same page/file so we can parse amount/date and show one block.
+   */
+  function buildContextAround(lines, idx, beforeMax, afterMax) {
+    if (!lines || idx < 0 || idx >= lines.length) return '';
+    var base = lines[idx];
+    var start = idx;
+    var bc = 0;
+    while (start > 0 && bc < beforeMax) {
+      var prev = lines[start - 1];
+      if (prev.page !== base.page || prev.fileIndex !== base.fileIndex) break;
+      if ((prev.text || '').length > 320) break;
+      start--;
+      bc++;
+    }
+    var end = idx;
+    var ac = 0;
+    while (end < lines.length - 1 && ac < afterMax) {
+      var next = lines[end + 1];
+      if (next.page !== base.page || next.fileIndex !== base.fileIndex) break;
+      if ((next.text || '').length > 320) break;
+      end++;
+      ac++;
+    }
+    var parts = [];
+    for (var k = start; k <= end; k++) parts.push(lines[k].text);
+    return parts.join(' ');
+  }
+
+  function filterLinesForSingle(person) {
+    var matches = [];
+    for (var i = 0; i < allLines.length; i++) {
+      var L = allLines[i];
+      if (lineMatchesPerson(L.text, person)) {
+        matches.push({ page: L.page, text: L.text, fileIndex: L.fileIndex, fileName: L.fileName, lineIndex: i });
+      }
+    }
+    return matches;
+  }
+
+  /** Lines matching any of the given people (each line at most once). */
   function filterLines(persons) {
     if (!persons.length) return [];
     var matches = [];
@@ -383,12 +511,37 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       var t = L.text;
       for (var j = 0; j < persons.length; j++) {
         if (lineMatchesPerson(t, persons[j])) {
-          matches.push({ page: L.page, text: t });
+          matches.push({ page: L.page, text: t, fileIndex: L.fileIndex, fileName: L.fileName, lineIndex: i });
           break;
         }
       }
     }
     return matches;
+  }
+
+  function summarizeFromMatches(matches) {
+    var enriched = matches.map(enrichMatch);
+    var part = partitionEnriched(enriched);
+    var sc = sumAmounts(part.credits);
+    var sd = sumAmounts(part.debits);
+    return {
+      enriched: enriched,
+      part: part,
+      sc: sc,
+      sd: sd,
+      bundle: {
+        credits: part.credits,
+        debits: part.debits,
+        unknown: part.unknown,
+        sumCredit: sc.sum,
+        sumDebit: sd.sum,
+        nCredit: part.credits.length,
+        nDebit: part.debits.length,
+        nUnknown: part.unknown.length,
+        nCreditWithAmt: sc.withAmount,
+        nDebitWithAmt: sd.withAmount
+      }
+    };
   }
 
   function formatINR(n) {
@@ -404,20 +557,219 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  /** Best-effort amount from one statement line (Indian / generic formats). */
+  function updateFiSummary(extra) {
+    var n = pendingFiles.length;
+    var elCount = $('fi-count');
+    var sizeEl = $('fi-size');
+    if (!n) {
+      if (elCount) elCount.textContent = '';
+      if (sizeEl) sizeEl.textContent = '';
+      return;
+    }
+    if (elCount) elCount.textContent = n + ' PDF' + (n === 1 ? '' : 's');
+    var totalKb = 0;
+    for (var i = 0; i < n; i++) totalKb += pendingFiles[i].size;
+    if (sizeEl) {
+      var s = (totalKb / 1024).toFixed(1) + ' KB';
+      if (extra) s += ' · ' + extra;
+      sizeEl.textContent = s;
+    }
+  }
+
+  function refreshFileInfoHeader() {
+    if (!pendingFiles.length) return;
+    var extra = '';
+    if (pdfDocs.length === pendingFiles.length) {
+      var tp = 0;
+      for (var j = 0; j < pdfDocs.length; j++) tp += pdfDocs[j].numPages;
+      extra = tp + ' page(s) total';
+    } else if (lastPdfU8List.length === pendingFiles.length) {
+      extra = 'opening…';
+    }
+    updateFiSummary(extra);
+  }
+
+  function renderPdfFileList() {
+    var list = $('pdf-file-list');
+    if (!list) return;
+    list.innerHTML = '';
+    var n = pendingFiles.length;
+    if (!n) return;
+    var synced = lastPdfU8List.length === n;
+    var canRemove = synced && !pipelineInFlight;
+    for (var i = 0; i < n; i++) {
+      var f = pendingFiles[i];
+      var row = document.createElement('div');
+      row.className = 'pdf-file-row';
+      var nameEl = document.createElement('span');
+      nameEl.className = 'pdf-file-name';
+      nameEl.textContent = f.name;
+      nameEl.title = f.name;
+      var meta = document.createElement('span');
+      meta.className = 'pdf-file-meta';
+      var pgPart = '';
+      if (pdfDocs[i] && pdfDocs[i].numPages) pgPart = pdfDocs[i].numPages + ' pg';
+      else if (pipelineInFlight || !linesExtractionComplete) pgPart = '…';
+      meta.textContent = (f.size / 1024).toFixed(1) + ' KB' + (pgPart ? ' · ' + pgPart : '');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-remove-pdf';
+      btn.setAttribute('data-index', String(i));
+      btn.setAttribute('aria-label', 'Remove ' + f.name);
+      btn.textContent = 'Remove';
+      btn.disabled = !canRemove;
+      row.appendChild(nameEl);
+      row.appendChild(meta);
+      row.appendChild(btn);
+      list.appendChild(row);
+    }
+  }
+
+  function removePdfAtIndex(idx) {
+    if (idx < 0 || idx >= pendingFiles.length) return;
+    if (lastPdfU8List.length !== pendingFiles.length || pipelineInFlight) return;
+    pendingFiles.splice(idx, 1);
+    lastPdfU8List.splice(idx, 1);
+    $('result-wrap').style.display = 'none';
+    hideStatus();
+    if (pendingFiles.length === 0) {
+      pdfDocs = [];
+      allLines = [];
+      linesExtractionComplete = false;
+      originalName = 'statement.pdf';
+      $('file-info').style.display = 'none';
+      $('pdf-file-list').innerHTML = '';
+      if ($('fi-count')) $('fi-count').textContent = '';
+      if ($('fi-size')) $('fi-size').textContent = '';
+      updatePasswordSection('none');
+      $('filter-panel').style.display = 'none';
+      $('btn-filter').disabled = true;
+      $('btn-add-more-pdfs').style.display = 'none';
+      $('btn-add-more-pdfs').disabled = true;
+      $('progress-wrap').style.display = 'none';
+      showStatus('All PDFs removed. Choose or drop new file(s).', 'info');
+      return;
+    }
+    originalName = pendingFiles.length === 1 ? pendingFiles[0].name : (pendingFiles.length + '-pdfs');
+    updateFiSummary('opening…');
+    renderPdfFileList();
+    pdfDocs = [];
+    runMultiPdfPipeline(pendingFiles);
+  }
+
+  /**
+   * Best-effort amount from one statement line.
+   * Prefer explicit INR / ₹ / Rs amounts (transaction text), not Math.max on all digits
+   * (balances or merged PDF text like 232024 would dwarf the real 9000.00).
+   */
+  /** Remove UPI/IMPS-style 8–20 digit ref IDs in paths (often mistaken for amount). */
+  function stripUpiStyleRefIds(s) {
+    var t = s;
+    t = t.replace(/\/(CR|DR|IR|DB)\/(\d{8,20})(?=\/)/gi, '/$1/');
+    t = t.replace(/\/(CR|DR|IR|DB)\/(\d{8,20})(?=\s|$)/gi, '/$1/');
+    t = t.replace(/UPI\/[A-Z]{2,8}\/(\d{8,20})(?=\/)/gi, 'UPI//');
+    return t;
+  }
+
+  function intDigitLen(numStr) {
+    var w = (numStr || '').split('.')[0];
+    return w.replace(/\D/g, '').length;
+  }
+
+  function isPlausibleTxAmount(v, hasDec, numStr) {
+    if (isNaN(v) || v <= 0) return false;
+    if (v > 1e12) return false;
+    var idl = intDigitLen(numStr);
+    if (!hasDec && v > 1e9) return false;
+    if (!hasDec && v >= 1e7 && idl >= 9) return false;
+    if (!hasDec && v >= 1e6 && idl >= 10) return false;
+    return true;
+  }
+
+  /** If the line has a date, show it in the list (no extra PDF layout; text must include the date). */
+  function extractDisplayDate(text) {
+    var s = String(text);
+    var patterns = [
+      /\b(\d{1,2}[-/]\d{1,2}[-/](?:\d{2}|\d{4}))\b/,
+      /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})\b/i,
+      /\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{1,2},?\s+\d{4})\b/i,
+      /\b(20\d{2}[-/]\d{1,2}[-/]\d{1,2})\b/,
+      /\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})\b/i
+    ];
+    for (var i = 0; i < patterns.length; i++) {
+      var m = s.match(patterns[i]);
+      if (m) return m[1].replace(/\s+/g, ' ').trim();
+    }
+    return '';
+  }
+
   function extractAmount(text) {
-    var raw = String(text).replace(/,/g, '');
-    var nums = [];
-    var re = /\d{1,10}(?:\.\d{1,4})?/g;
+    var raw0 = String(text);
+    var forAmt = stripUpiStyleRefIds(raw0);
+    var raw = forAmt.replace(/,/g, '');
     var m;
+    var v;
+    var inrRe = /\bINR\.?\s*([\d]+(?:\.\d{1,4})?)/gi;
+    var inrC = [];
+    while ((m = inrRe.exec(raw)) !== null) {
+      v = parseFloat(m[1]);
+      var hasDec = m[1].indexOf('.') >= 0;
+      if (isPlausibleTxAmount(v, hasDec, m[1])) inrC.push({ v: v, hasDec: hasDec });
+    }
+    if (inrC.length) {
+      var decs = inrC.filter(function(c) { return c.hasDec; });
+      if (decs.length) return decs[decs.length - 1].v;
+      return inrC[inrC.length - 1].v;
+    }
+
+    var rsRe = /\b(?:Rs|RS)\.?\s*([\d]+(?:\.\d{1,4})?)/g;
+    var rsC = [];
+    while ((m = rsRe.exec(raw)) !== null) {
+      v = parseFloat(m[1]);
+      var hd = m[1].indexOf('.') >= 0;
+      if (isPlausibleTxAmount(v, hd, m[1])) rsC.push({ v: v, hasDec: hd });
+    }
+    if (rsC.length) {
+      var rsDec = rsC.filter(function(c) { return c.hasDec; });
+      if (rsDec.length) return rsDec[rsDec.length - 1].v;
+      return rsC[rsC.length - 1].v;
+    }
+
+    var rupeeRe = /[₹]\s*([\d]+(?:\.\d{1,4})?)/g;
+    var rupC = [];
+    while ((m = rupeeRe.exec(raw)) !== null) {
+      v = parseFloat(m[1]);
+      var h2 = m[1].indexOf('.') >= 0;
+      if (isPlausibleTxAmount(v, h2, m[1])) rupC.push({ v: v, hasDec: h2 });
+    }
+    if (rupC.length) {
+      var ruDec = rupC.filter(function(c) { return c.hasDec; });
+      if (ruDec.length) return ruDec[ruDec.length - 1].v;
+      return rupC[rupC.length - 1].v;
+    }
+
+    var cdAmt = /(?:\bCredit\b|\bDebit\b)\s+INR\.?\s*([\d]+(?:\.\d{1,4})?)\s*$/i.exec(raw.trim());
+    if (cdAmt) {
+      v = parseFloat(cdAmt[1]);
+      if (isPlausibleTxAmount(v, cdAmt[1].indexOf('.') >= 0, cdAmt[1])) return v;
+    }
+    cdAmt = /(?:\bCR\b|\bDR\b)\s+([\d]+(?:\.\d{1,4})?)\s*$/i.exec(raw.trim());
+    if (cdAmt) {
+      v = parseFloat(cdAmt[1]);
+      if (isPlausibleTxAmount(v, cdAmt[1].indexOf('.') >= 0, cdAmt[1])) return v;
+    }
+
+    var re = /\d{1,10}(?:\.\d{1,4})?/g;
+    var lastNum = null;
     while ((m = re.exec(raw)) !== null) {
-      var v = parseFloat(m[0]);
+      v = parseFloat(m[0]);
       if (isNaN(v) || v <= 0) continue;
       if (v >= 1990 && v <= 2035 && m[0].indexOf('.') < 0) continue;
-      nums.push(v);
+      if (v >= 1 && v <= 31 && m[0].indexOf('.') < 0) continue;
+      if (!isPlausibleTxAmount(v, m[0].indexOf('.') >= 0, m[0])) continue;
+      lastNum = v;
     }
-    if (!nums.length) return null;
-    return Math.max.apply(null, nums);
+    return lastNum;
   }
 
   /** Heuristic credit vs debit (varies by bank; “unknown” when unclear). */
@@ -440,9 +792,40 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   }
 
   function enrichMatch(m) {
-    var amt = extractAmount(m.text);
-    var type = classifyLine(m.text);
-    return { page: m.page, text: m.text, amount: amt, type: type };
+    var ctx = typeof m.lineIndex === 'number' ? buildContextAround(allLines, m.lineIndex, 6, 14) : m.text;
+    var amt = extractAmount(ctx);
+    if (amt == null) amt = extractAmount(m.text);
+    var type = classifyLine(ctx);
+    if (type === 'unknown') type = classifyLine(m.text);
+    var dateHint = extractDisplayDate(ctx) || extractDisplayDate(m.text);
+    var mergedText = '';
+    var singleNorm = (m.text || '').replace(/\s+/g, ' ').trim();
+    var ctxNorm = (ctx || '').replace(/\s+/g, ' ').trim();
+    if (ctxNorm.length > singleNorm.length + 12) {
+      mergedText = ctxNorm.length > 500 ? ctxNorm.slice(0, 497) + '…' : ctxNorm;
+    }
+    return {
+      page: m.page,
+      text: m.text,
+      mergedText: mergedText,
+      amount: amt,
+      type: type,
+      fileIndex: m.fileIndex,
+      fileName: m.fileName,
+      dateHint: dateHint
+    };
+  }
+
+  function shortFileLabel(fn) {
+    if (!fn) return '';
+    var b = String(fn).replace(/^.*[\\/]/, '');
+    if (b.length > 28) return b.slice(0, 26) + '…';
+    return b;
+  }
+
+  function rowLocationLabel(r) {
+    if (pdfDocs.length > 1 && r.fileName) return shortFileLabel(r.fileName) + ' p.' + r.page;
+    return 'Page ' + r.page;
   }
 
   function partitionEnriched(rows) {
@@ -470,15 +853,25 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return { sum: s, withAmount: n };
   }
 
-  function lineHtml(row) {
-    var safe = esc(row.text);
-    var amt = row.amount != null ? '<span class="amt">' + formatINR(row.amount) + '</span>' : '';
-    var cls = row.type === 'credit' ? 'c' : row.type === 'debit' ? 'd' : 'u';
-    return '<div class="tx-line ' + cls + '">' + amt + '<span class="pg">p.' + row.page + '</span>' + safe + '</div>';
+  function rowBodyForList(row) {
+    return (row.mergedText && String(row.mergedText).length) ? row.mergedText : row.text;
   }
 
-  function renderMatches(matches) {
-    lastMatches = matches;
+  function lineHtml(row) {
+    var safe = esc(rowBodyForList(row));
+    var amt = row.amount != null ? '<span class="amt">' + formatINR(row.amount) + '</span>' : '';
+    var cls = row.type === 'credit' ? 'c' : row.type === 'debit' ? 'd' : 'u';
+    var dh = (row.dateHint && String(row.dateHint)) ? row.dateHint : extractDisplayDate(rowBodyForList(row));
+    var dateEl = dh ? '<span class="tx-date">' + esc(dh) + '</span> · ' : '';
+    var pg = (pdfDocs.length > 1 && row.fileName)
+      ? '<span class="pg">' + dateEl + esc(shortFileLabel(row.fileName)) + ' · p.' + row.page + '</span>'
+      : '<span class="pg">' + dateEl + 'p.' + row.page + '</span>';
+    return '<div class="tx-line ' + cls + '">' + amt + pg + safe + '</div>';
+  }
+
+  function renderMatches(matches, persons) {
+    persons = persons || [];
+    lastMatches = [];
     lastResultBundle = null;
     var box = $('result-box');
     if (!matches.length) {
@@ -487,55 +880,68 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       $('result-wrap').style.display = 'block';
       return;
     }
-    var enriched = matches.map(enrichMatch);
-    var part = partitionEnriched(enriched);
-    var sc = sumAmounts(part.credits);
-    var sd = sumAmounts(part.debits);
-    lastResultBundle = {
-      credits: part.credits,
-      debits: part.debits,
-      unknown: part.unknown,
-      sumCredit: sc.sum,
-      sumDebit: sd.sum,
-      nCredit: part.credits.length,
-      nDebit: part.debits.length,
-      nUnknown: part.unknown.length,
-      nCreditWithAmt: sc.withAmount,
-      nDebitWithAmt: sd.withAmount
-    };
+    var filterDesc = persons.map(personLabel).filter(function(x) { return x && x !== '—'; }).join(' · ') || 'your search';
+    var main = summarizeFromMatches(matches);
+    lastMatches = main.enriched;
+    var part = main.part;
+    var sc = main.sc;
+    var sd = main.sd;
+    lastResultBundle = main.bundle;
+    lastResultBundle.filterDescription = filterDesc;
 
     var html = '';
+    html += '<div class="filter-scope-note"><strong>For your search:</strong> ' + esc(filterDesc) + '. ';
+    html += '<span class="scope-sub">The credit/debit totals and lists below include <strong>only</strong> statement lines that match this name or phone — not your full statement. Same line is not counted twice if you added several people.</span></div>';
+
+    if (persons.length > 1) {
+      html += '<div class="per-person-heading">Per person (lines can be counted under more than one person if the text matches both)</div>';
+      html += '<div class="per-person-grid">';
+      for (var pi = 0; pi < persons.length; pi++) {
+        var pm = filterLinesForSingle(persons[pi]);
+        var sm = summarizeFromMatches(pm);
+        html += '<div class="per-person-card">';
+        html += '<div class="pp-name">' + esc(personLabel(persons[pi])) + '</div>';
+        html += '<div class="pp-row c"><span>Credit lines · total</span><span>' + sm.part.credits.length + ' · ' + formatINR(sm.sc.sum) + '</span></div>';
+        html += '<div class="pp-row d"><span>Debit lines · total</span><span>' + sm.part.debits.length + ' · ' + formatINR(sm.sd.sum) + '</span></div>';
+        if (sm.part.unknown.length) {
+          html += '<div class="pp-row u"><span>Unclear type</span><span>' + sm.part.unknown.length + ' line(s)</span></div>';
+        }
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+
     html += '<div class="summary-strip">';
-    html += '<div class="summary-pill c"><div class="lbl">Total credited (parsed)</div><div class="val">' + formatINR(sc.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.credits.length + ' credit line(s)</div></div>';
-    html += '<div class="summary-pill d"><div class="lbl">Total debited (parsed)</div><div class="val">' + formatINR(sd.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.debits.length + ' debit line(s)</div></div>';
+    html += '<div class="summary-pill c"><div class="lbl">Their credits (matching lines)</div><div class="val">' + formatINR(sc.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.credits.length + ' line(s) classified credit</div></div>';
+    html += '<div class="summary-pill d"><div class="lbl">Their debits (matching lines)</div><div class="val">' + formatINR(sd.sum) + '</div><div class="lbl" style="margin-top:6px">' + part.debits.length + ' line(s) classified debit</div></div>';
     html += '</div>';
 
-    html += '<div class="tx-block"><h3 class="c">Credit transactions</h3>';
-    if (!part.credits.length) html += '<div class="tx-line u">No lines classified as credit (keywords: credit, cr, deposit, received…).</div>';
+    html += '<div class="tx-block"><h3 class="c">Credit transactions — matching your search</h3>';
+    if (!part.credits.length) html += '<div class="tx-line u">No matching lines classified as credit (keywords: credit, cr, deposit, received…).</div>';
     else html += part.credits.map(lineHtml).join('');
     html += '</div>';
 
-    html += '<div class="tx-block"><h3 class="d">Debit transactions</h3>';
-    if (!part.debits.length) html += '<div class="tx-line u">No lines classified as debit (keywords: debit, dr, withdraw, paid to…).</div>';
+    html += '<div class="tx-block"><h3 class="d">Debit transactions — matching your search</h3>';
+    if (!part.debits.length) html += '<div class="tx-line u">No matching lines classified as debit (keywords: debit, dr, withdraw, paid to…).</div>';
     else html += part.debits.map(lineHtml).join('');
     html += '</div>';
 
     if (part.unknown.length) {
-      html += '<div class="tx-block"><h3 class="u">Other (could not tell credit vs debit)</h3>';
+      html += '<div class="tx-block"><h3 class="u">Other — matching your search (credit vs debit unclear)</h3>';
       html += part.unknown.map(lineHtml).join('');
       html += '</div>';
     }
 
     html += '<div class="summary-final">';
-    html += '<h4>Summary</h4>';
-    html += '<div class="row"><span>Total amount credited <span class="muted">(sum of parsed amounts)</span></span><span>' + formatINR(sc.sum) + '</span></div>';
-    html += '<div class="row"><span>Total amount debited <span class="muted">(sum of parsed amounts)</span></span><span>' + formatINR(sd.sum) + '</span></div>';
-    html += '<div class="row"><span>Total credit transactions</span><span>' + part.credits.length + '</span></div>';
-    html += '<div class="row"><span>Total debit transactions</span><span>' + part.debits.length + '</span></div>';
+    html += '<h4>Summary — matching lines only</h4>';
+    html += '<div class="row"><span>Total credited <span class="muted">(parsed from matching lines)</span></span><span>' + formatINR(sc.sum) + '</span></div>';
+    html += '<div class="row"><span>Total debited <span class="muted">(parsed from matching lines)</span></span><span>' + formatINR(sd.sum) + '</span></div>';
+    html += '<div class="row"><span>Credit transactions (matching)</span><span>' + part.credits.length + '</span></div>';
+    html += '<div class="row"><span>Debit transactions (matching)</span><span>' + part.debits.length + '</span></div>';
     if (part.unknown.length) {
-      html += '<div class="row"><span>Other / unclear lines</span><span>' + part.unknown.length + '</span></div>';
+      html += '<div class="row"><span>Other / unclear (matching)</span><span>' + part.unknown.length + '</span></div>';
     }
-    html += '<div class="row muted" style="font-weight:500;padding-top:10px;border-top:1px dashed #475569;margin-top:8px">Amounts are guessed from numbers on each line; your bank’s layout may differ. Verify against your statement.</div>';
+    html += '<div class="row muted" style="font-weight:500;padding-top:10px;border-top:1px dashed #475569;margin-top:8px">Amounts are estimated from numbers on each line; classification uses keywords. Verify against your bank’s statement.</div>';
     html += '</div>';
 
     box.innerHTML = html;
@@ -572,86 +978,536 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     $('drop-zone').addEventListener(ev, function(e) {
       e.preventDefault();
       $('drop-zone').classList.toggle('over', ev === 'dragover');
-      if (ev === 'drop' && e.dataTransfer.files[0]) loadPdf(e.dataTransfer.files[0]);
+      if (ev === 'drop' && e.dataTransfer.files && e.dataTransfer.files.length) {
+        if (linesExtractionComplete && pendingFiles.length && lastPdfU8List.length === pendingFiles.length) {
+          loadPdfsAppend(e.dataTransfer.files);
+        } else {
+          loadPdfs(e.dataTransfer.files);
+        }
+      }
     });
   });
   $('file-input').addEventListener('change', function() {
-    if (this.files[0]) loadPdf(this.files[0]);
+    if (!this.files || !this.files.length) return;
+    if (pickPdfsAppendMode) {
+      pickPdfsAppendMode = false;
+      loadPdfsAppend(this.files);
+    } else {
+      loadPdfs(this.files);
+    }
+    this.value = '';
+  });
+  $('btn-add-more-pdfs').addEventListener('click', function() {
+    if (!linesExtractionComplete || !pendingFiles.length) return;
+    pickPdfsAppendMode = true;
+    $('file-input').click();
+  });
+  $('file-info').addEventListener('click', function(e) {
+    var btn = e.target.closest && e.target.closest('.btn-remove-pdf');
+    if (!btn || btn.disabled) return;
+    var idx = parseInt(btn.getAttribute('data-index'), 10);
+    if (!isNaN(idx)) removePdfAtIndex(idx);
   });
 
-  function loadPdf(file) {
-    if (!/\.pdf$/i.test(file.name) && file.type !== 'application/pdf') {
-      showStatus('Please choose a PDF file.', false);
+  function collectPdfFiles(fileList) {
+    var out = [];
+    for (var i = 0; i < fileList.length; i++) {
+      var f = fileList[i];
+      if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') out.push(f);
+    }
+    return out;
+  }
+
+  /** Password UI: hidden until a file actually needs an open password, or unlock-only after success. */
+  function updatePasswordSection(mode) {
+    var sec = $('pdf-pw-section');
+    var prompt = $('pdf-pw-prompt');
+    var btnUn = $('btn-unlocked-pdf');
+    sec.classList.remove('pw-unlock-only');
+    if (mode === 'none') {
+      sec.style.display = 'none';
+      if (prompt) prompt.style.display = 'none';
+      btnUn.style.display = 'none';
+      return;
+    }
+    sec.style.display = 'block';
+    if (mode === 'prompt') {
+      if (prompt) prompt.style.display = 'block';
+      btnUn.style.display = 'none';
+    } else if (mode === 'unlock-only') {
+      sec.classList.add('pw-unlock-only');
+      if (prompt) prompt.style.display = 'none';
+      btnUn.style.display = 'block';
+    }
+  }
+
+  function loadPdfs(inputFiles) {
+    var files = collectPdfFiles(inputFiles);
+    if (!files.length) {
+      showStatus('Please choose at least one PDF (other file types are skipped).', false);
       return;
     }
     hideStatus();
-    originalName = file.name;
+    pendingFiles = files;
+    originalName = files.length === 1 ? files[0].name : (files.length + '-pdfs');
+    $('file-info').style.display = 'flex';
+    updateFiSummary('opening…');
+    renderPdfFileList();
+    $('filter-panel').style.display = 'none';
+    $('result-wrap').style.display = 'none';
+    $('pdf-password').value = '';
+    updatePasswordSection('none');
+    $('btn-unlocked-pdf').textContent = '⬇ Download unlocked PDF (no password)';
+    usedPdfPasswordForOpen = false;
     linesExtractionComplete = false;
     $('btn-filter').disabled = true;
+    $('btn-add-more-pdfs').style.display = 'none';
+    $('btn-add-more-pdfs').disabled = true;
     if ($('p-hint')) $('p-hint').textContent = 'Extracting text from every page — the Find button will enable when this finishes.';
-    var reader = new FileReader();
-    reader.onload = function() {
-      var buf = this.result;
-      var task = pdfjsLib.getDocument({
-        data: new Uint8Array(buf.slice(0)),
-        cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
-        cMapPacked: true,
-        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
-        useSystemFonts: true
-      });
-      task.promise.then(function(doc) {
-        pdfDoc = doc;
-        $('file-info').style.display = 'flex';
-        $('fi-name').textContent = file.name;
-        $('fi-size').textContent = (file.size / 1024).toFixed(1) + ' KB · ' + doc.numPages + ' page' + (doc.numPages === 1 ? '' : 's');
-        $('filter-panel').style.display = 'block';
-        /* Keep Find disabled until extractAllLines() finishes (avoid empty allLines) */
-        $('btn-filter').disabled = true;
-        $('result-wrap').style.display = 'none';
-        $('progress-wrap').style.display = 'block';
-        $('progress-bar').style.width = '0%';
-        showStatus('Reading the PDF. Please wait for the bar to finish before tapping Find…', 'info');
-        return extractAllLines();
-      }).then(function() {
-        if (allLines.length) {
-          lastExtractUsedOcr = false;
-          return Promise.resolve();
-        }
-        lastExtractUsedOcr = true;
-        if ($('p-hint')) $('p-hint').textContent = 'No text layer — running OCR on each page (slow; keep this tab open)…';
-        showStatus('No embedded text — loading OCR in your browser. First time: ~10–15 MB English data downloads. Large statements may take several minutes.', 'info');
-        $('progress-wrap').style.display = 'block';
-        $('progress-bar').style.width = '0%';
-        return extractAllLinesViaOcr(pdfDoc);
-      }).then(function() {
-        linesExtractionComplete = true;
-        $('progress-wrap').style.display = 'none';
-        hideStatus();
-        if (!allLines.length) {
-          $('btn-filter').disabled = true;
-          showStatus('No lines could be read — not even with OCR. Try a clearer scan, fewer pages, or a text/Excel export from your bank.', false);
-          lastExtractUsedOcr = false;
-        } else {
-          $('btn-filter').disabled = false;
-          if (lastExtractUsedOcr) {
-            showStatus('Loaded ' + allLines.length + ' line(s) via OCR from ' + pdfDoc.numPages + ' page(s). Text may have small mistakes — use short name fragments. Tap Find.', true);
-          } else {
-            showStatus('Loaded ' + allLines.length + ' text lines from ' + pdfDoc.numPages + ' page(s). Set names/phones and tap Find.', true);
+    lastPdfU8List = [];
+    pdfDocs = [];
+    var buffers = new Array(files.length);
+    var done = 0;
+    var failed = false;
+    for (var r = 0; r < files.length; r++) {
+      (function(idx) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          if (failed) return;
+          buffers[idx] = new Uint8Array(this.result.slice(0));
+          done++;
+          if (done === files.length) {
+            lastPdfU8List = buffers;
+            runMultiPdfPipeline(files);
           }
-        }
-      }).catch(function(e) {
-        linesExtractionComplete = false;
-        lastExtractUsedOcr = false;
-        $('progress-wrap').style.display = 'none';
-        showStatus('Could not read PDF: ' + (e.message || e), false);
-        pdfDoc = null;
-        $('filter-panel').style.display = 'none';
-        $('file-info').style.display = 'none';
-        $('btn-filter').disabled = true;
-      });
-    };
-    reader.readAsArrayBuffer(file);
+        };
+        reader.onerror = function() {
+          if (failed) return;
+          failed = true;
+          showStatus('Could not read: ' + files[idx].name, false);
+        };
+        reader.readAsArrayBuffer(files[idx]);
+      })(r);
+    }
   }
+
+  /** Append more PDFs to the current batch and re-run extraction (Find searches all). */
+  function loadPdfsAppend(inputFiles) {
+    var add = collectPdfFiles(inputFiles);
+    if (!add.length) {
+      showStatus('No PDF files to add.', false);
+      return;
+    }
+    if (!pendingFiles.length || lastPdfU8List.length !== pendingFiles.length) {
+      loadPdfs(inputFiles);
+      return;
+    }
+    hideStatus();
+    $('result-wrap').style.display = 'none';
+    var oldLen = pendingFiles.length;
+    pendingFiles = pendingFiles.concat(add);
+    originalName = pendingFiles.length === 1 ? pendingFiles[0].name : (pendingFiles.length + '-pdfs');
+    $('file-info').style.display = 'flex';
+    updateFiSummary('opening…');
+    renderPdfFileList();
+    linesExtractionComplete = false;
+    $('btn-filter').disabled = true;
+    $('btn-add-more-pdfs').disabled = true;
+    if ($('p-hint')) $('p-hint').textContent = 'Extracting text from every page — the Find button will enable when this finishes.';
+    var newBuffers = lastPdfU8List.slice(0, oldLen);
+    newBuffers.length = pendingFiles.length;
+    var done = 0;
+    var failed = false;
+    for (var r = 0; r < add.length; r++) {
+      (function(idx, file) {
+        var reader = new FileReader();
+        reader.onload = function() {
+          if (failed) return;
+          newBuffers[oldLen + idx] = new Uint8Array(this.result.slice(0));
+          done++;
+          if (done === add.length) {
+            lastPdfU8List = newBuffers;
+            pdfDocs = [];
+            runMultiPdfPipeline(pendingFiles);
+          }
+        };
+        reader.onerror = function() {
+          if (failed) return;
+          failed = true;
+          pendingFiles = pendingFiles.slice(0, oldLen);
+          showStatus('Could not read: ' + file.name, false);
+          $('btn-add-more-pdfs').disabled = false;
+          refreshFileInfoHeader();
+          renderPdfFileList();
+        };
+        reader.readAsArrayBuffer(file);
+      })(r, add[r]);
+    }
+  }
+
+  /** PDF.js sometimes rejects with plain objects; never show "[object Object]". */
+  function formatPdfReason(e) {
+    if (e == null || e === undefined) return 'Unknown error.';
+    if (typeof e === 'string') return e;
+    if (typeof e !== 'object') return String(e);
+    if (typeof e.message === 'string' && e.message) return e.message;
+    if (typeof e.details === 'string' && e.details) return e.details;
+    if (typeof e.name === 'string' && e.name && e.name !== 'Object') return e.name;
+    try {
+      var j = JSON.stringify(e);
+      if (j && j !== '{}') return j;
+    } catch (z) {}
+    if (typeof e.toString === 'function') {
+      var t = e.toString();
+      if (t && t !== '[object Object]') return t;
+    }
+    return 'Could not open this PDF (the viewer did not return a message).';
+  }
+
+  function isPasswordRelatedPdfError(e, msgStr) {
+    var name = (e && e.name) ? String(e.name) : '';
+    if (/password/i.test(name)) return true;
+    var m = (msgStr || '').toLowerCase();
+    if (/password|encrypt|decrypt|need a password|incorrect|no password given|protected|cipher/i.test(m)) return true;
+    return false;
+  }
+
+  function buildDocOptions(pwd, u8) {
+    var o = {
+      data: new Uint8Array(u8.slice(0)),
+      cMapUrl: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+      useSystemFonts: true
+    };
+    if (pwd !== undefined && pwd !== null && pwd !== '') o.password = pwd;
+    return o;
+  }
+
+  function collectPasswordTries() {
+    var raw = $('pdf-password').value || '';
+    var tr = raw.trim();
+    var list = [undefined];
+    if (tr) {
+      list.push(tr);
+      if (raw !== tr) list.push(raw);
+    }
+    return list;
+  }
+
+  function chainDocumentOpen(tries, u8) {
+    return tries.reduce(function(p, pwd) {
+      return p.catch(function() {
+        return pdfjsLib.getDocument(buildDocOptions(pwd, u8)).promise;
+      });
+    }, Promise.reject());
+  }
+
+  function processOnePdfForLines(doc, meta, ocrState) {
+    var lenBefore = allLines.length;
+    return extractAllLinesFromDoc(doc, meta).then(function() {
+      if (allLines.length > lenBefore) return Promise.resolve();
+      lastExtractUsedOcr = true;
+      if ($('p-hint')) $('p-hint').textContent = 'No text layer — running OCR on this file (slow; keep this tab open)…';
+      showStatus('No embedded text in at least one file — loading OCR. First time: ~10–15 MB English data may download.', 'info');
+      $('progress-wrap').style.display = 'block';
+      $('progress-bar').style.width = '0%';
+      return extractAllLinesViaOcr(doc, meta, ocrState);
+    });
+  }
+
+  function runMultiPdfPipeline(files) {
+    if (!lastPdfU8List || lastPdfU8List.length !== files.length) {
+      showStatus('File data not ready. Choose PDF(s) again.', false);
+      return;
+    }
+    pipelineInFlight = true;
+    linesExtractionComplete = false;
+    lastExtractUsedOcr = false;
+    allLines = [];
+    pdfDocs = [];
+    $('btn-filter').disabled = true;
+    $('btn-unlocked-pdf').style.display = 'none';
+    $('btn-add-more-pdfs').disabled = true;
+    if ($('p-hint')) $('p-hint').textContent = 'Extracting text from every page — the Find button will enable when this finishes.';
+    $('progress-wrap').style.display = 'block';
+    $('progress-bar').style.width = '0%';
+    showStatus('Opening ' + files.length + ' PDF(s)…', 'info');
+
+    var iOpen = 0;
+    function openNext() {
+      if (iOpen >= files.length) return Promise.resolve();
+      var idx = iOpen;
+      return chainDocumentOpen(collectPasswordTries(), lastPdfU8List[idx]).then(function(doc) {
+        pdfDocs.push(doc);
+        iOpen++;
+        return openNext();
+      }).catch(function(err) {
+        return Promise.reject({ err: err, failIdx: idx, fileName: files[idx].name });
+      });
+    }
+
+    return openNext().then(function() {
+      usedPdfPasswordForOpen = !!($('pdf-password').value && $('pdf-password').value.trim());
+      $('file-info').style.display = 'flex';
+      refreshFileInfoHeader();
+      renderPdfFileList();
+      $('filter-panel').style.display = 'block';
+      $('result-wrap').style.display = 'none';
+      showStatus('Reading text from ' + pdfDocs.length + ' file(s)…', 'info');
+      var ocrShared = { used: 0 };
+      function extractSeq(qi) {
+        if (qi >= pdfDocs.length) return Promise.resolve();
+        var meta = { fileIndex: qi, fileName: files[qi].name, totalFiles: pdfDocs.length };
+        return processOnePdfForLines(pdfDocs[qi], meta, ocrShared).then(function() {
+          return extractSeq(qi + 1);
+        });
+      }
+      return extractSeq(0);
+    }).then(function() {
+      linesExtractionComplete = true;
+      $('progress-wrap').style.display = 'none';
+      hideStatus();
+      originalName = files.length === 1 ? files[0].name : (files.length + '-pdfs');
+      if (!allLines.length) {
+        $('btn-filter').disabled = true;
+        $('btn-add-more-pdfs').style.display = 'block';
+        $('btn-add-more-pdfs').disabled = false;
+        if (usedPdfPasswordForOpen) {
+          $('btn-unlocked-pdf').textContent = pdfDocs.length > 1
+            ? '⬇ Download unlocked PDFs (.zip)'
+            : '⬇ Download unlocked PDF (no password)';
+          updatePasswordSection('unlock-only');
+        } else {
+          updatePasswordSection('none');
+        }
+        showStatus('No lines could be read — not even with OCR. Try clearer scans, fewer pages, or exports from your bank.', false);
+        lastExtractUsedOcr = false;
+      } else {
+        $('btn-filter').disabled = false;
+        $('btn-add-more-pdfs').style.display = 'block';
+        $('btn-add-more-pdfs').disabled = false;
+        if (usedPdfPasswordForOpen) {
+          $('btn-unlocked-pdf').textContent = pdfDocs.length > 1
+            ? '⬇ Download unlocked PDFs (.zip)'
+            : '⬇ Download unlocked PDF (no password)';
+          updatePasswordSection('unlock-only');
+        } else {
+          updatePasswordSection('none');
+        }
+        var totalP = 0;
+        for (var z = 0; z < pdfDocs.length; z++) totalP += pdfDocs[z].numPages;
+        if (lastExtractUsedOcr) {
+          showStatus('Loaded ' + allLines.length + ' line(s) via OCR from ' + pdfDocs.length + ' PDF(s), ' + totalP + ' page(s). Tap Find.', true);
+        } else {
+          showStatus('Loaded ' + allLines.length + ' text line(s) from ' + pdfDocs.length + ' PDF(s), ' + totalP + ' page(s). Tap Find.', true);
+        }
+      }
+    }).catch(function(x) {
+      linesExtractionComplete = false;
+      lastExtractUsedOcr = false;
+      $('progress-wrap').style.display = 'none';
+      var wrapped = x && typeof x.failIdx === 'number' && Object.prototype.hasOwnProperty.call(x, 'err');
+      var e = wrapped ? x.err : x;
+      var failIdx = wrapped ? x.failIdx : null;
+      var fileLabel = wrapped && x.fileName ? x.fileName : '';
+      var msg = formatPdfReason(e);
+      pdfDocs = [];
+      if (isPasswordRelatedPdfError(e, msg)) {
+        var earlier = failIdx != null && failIdx > 0;
+        var detail = failIdx != null
+          ? (fileLabel + ' — file ' + (failIdx + 1) + ' of ' + files.length + '. ')
+          : '';
+        var lead = earlier
+          ? 'Unprotected PDFs in this batch already opened. Only this one is locked. '
+          : '';
+        showStatus(lead + detail + 'Enter its open password below and tap Unlock & load.', false);
+        $('file-info').style.display = 'flex';
+        $('filter-panel').style.display = 'block';
+        updatePasswordSection('prompt');
+        $('btn-filter').disabled = true;
+        $('btn-add-more-pdfs').disabled = true;
+        return;
+      }
+      showStatus('Could not read PDF(s): ' + msg, false);
+      $('filter-panel').style.display = 'none';
+      $('file-info').style.display = 'none';
+      $('btn-filter').disabled = true;
+      $('btn-add-more-pdfs').style.display = 'none';
+      $('btn-add-more-pdfs').disabled = true;
+      updatePasswordSection('none');
+    }).finally(function() {
+      pipelineInFlight = false;
+      if (pendingFiles.length) refreshFileInfoHeader();
+      renderPdfFileList();
+    });
+  }
+
+  $('btn-pdf-reload').addEventListener('click', function() {
+    if (!pendingFiles.length || !lastPdfU8List.length || lastPdfU8List.length !== pendingFiles.length) {
+      showStatus('Choose PDF file(s) first.', false);
+      return;
+    }
+    runMultiPdfPipeline(pendingFiles);
+  });
+
+  function rasterizeDocumentToBlob(pdfDocument, setProgress) {
+    var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDF) return Promise.reject(new Error('jsPDF not loaded'));
+    var n = pdfDocument.numPages;
+    if (n > 60) {
+      return Promise.reject(new Error('Each PDF must be 60 pages or fewer for unlocked export in the browser.'));
+    }
+    var doc = new jsPDF({ unit: 'pt', format: 'a4', compress: true });
+    var pageW = doc.internal.pageSize.getWidth();
+    var pageH = doc.internal.pageSize.getHeight();
+    function renderPage(p) {
+      if (p > n) return Promise.resolve(doc.output('blob'));
+      if (setProgress) setProgress(p, n);
+      return pdfDocument.getPage(p).then(function(page) {
+        var v1 = page.getViewport({ scale: 1 });
+        var s = Math.min(pageW / v1.width, pageH / v1.height) * 1.05;
+        if (s > 2.4) s = 2.4;
+        var vp = page.getViewport({ scale: s });
+        var c = document.createElement('canvas');
+        c.width = Math.floor(vp.width);
+        c.height = Math.floor(vp.height);
+        var ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, c.width, c.height);
+        return page.render({ canvasContext: ctx, viewport: vp }).promise.then(function() {
+          if (p > 1) doc.addPage();
+          var dataUrl = c.toDataURL('image/jpeg', 0.86);
+          doc.addImage(dataUrl, 'JPEG', 0, 0, pageW, pageH);
+          return renderPage(p + 1);
+        });
+      });
+    }
+    return renderPage(1);
+  }
+
+  function safeZipBaseName(fn) {
+    var b = String(fn || 'statement').replace(/\.pdf$/i, '').replace(/^.*[\\/]/, '');
+    var cleaned = b.replace(/[^\w.\- ()\[\]]+/g, '_').replace(/_+/g, '_').trim();
+    return (cleaned || 'statement').slice(0, 80);
+  }
+
+  function exportUnlockedRasterPdf() {
+    if (!pdfDocs.length || !linesExtractionComplete) {
+      showStatus('Load PDF(s) fully first.', false);
+      return;
+    }
+    var btn = $('btn-unlocked-pdf');
+    var prevLabel = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = pdfDocs.length > 1 ? 'Building ZIP…' : 'Building PDF…';
+    showStatus('Creating unlocked file(s) from page images (no password). Keep this tab open…', 'info');
+    $('progress-wrap').style.display = 'block';
+    $('progress-bar').style.width = '0%';
+
+    var jsPDF = (window.jspdf && window.jspdf.jsPDF) || window.jsPDF;
+    if (!jsPDF) {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      $('progress-wrap').style.display = 'none';
+      showStatus('PDF export library not loaded. Refresh the page.', false);
+      return;
+    }
+
+    var totalPagesAll = 0;
+    for (var t = 0; t < pdfDocs.length; t++) {
+      var np = pdfDocs[t].numPages;
+      if (np > 60) {
+        btn.disabled = false;
+        btn.textContent = prevLabel;
+        $('progress-wrap').style.display = 'none';
+        showStatus('Unlocked export: each file must be ≤60 pages (' + (pendingFiles[t] && pendingFiles[t].name ? pendingFiles[t].name : 'file') + ' has ' + np + ').', false);
+        return;
+      }
+      totalPagesAll += np;
+    }
+    if (totalPagesAll > 200) {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      $('progress-wrap').style.display = 'none';
+      showStatus('Unlocked export is limited to 200 pages total in the browser. Split the batch or export fewer files.', false);
+      return;
+    }
+
+    function finishOk(msg) {
+      $('progress-wrap').style.display = 'none';
+      hideStatus();
+      showStatus(msg, true);
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+    }
+
+    function failErr(err) {
+      $('progress-wrap').style.display = 'none';
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      showStatus('Export failed: ' + (err && err.message ? err.message : err), false);
+    }
+
+    if (pdfDocs.length === 1) {
+      rasterizeDocumentToBlob(pdfDocs[0], function(p, n) {
+        $('progress-bar').style.width = Math.round(100 * (p - 0.5) / n) + '%';
+      }).then(function(blob) {
+        var nm = safeZipBaseName(pendingFiles[0] ? pendingFiles[0].name : originalName) + '-unlocked.pdf';
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = nm;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        finishOk('Downloaded ' + nm + ' — no open password. Built from images (text may not be selectable).');
+      }).catch(failErr);
+      return;
+    }
+
+    if (typeof JSZip === 'undefined') {
+      btn.disabled = false;
+      btn.textContent = prevLabel;
+      $('progress-wrap').style.display = 'none';
+      showStatus('ZIP library not loaded. Refresh the page.', false);
+      return;
+    }
+
+    var zip = new JSZip();
+    var di = 0;
+    function addDocToZip() {
+      if (di >= pdfDocs.length) {
+        return zip.generateAsync({ type: 'blob' }).then(function(zblob) {
+          var zname = safeZipBaseName(originalName) + '-unlocked.zip';
+          var url = URL.createObjectURL(zblob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = zname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          finishOk('Downloaded ' + zname + ' with ' + pdfDocs.length + ' unlocked PDF(s).');
+        });
+      }
+      var d = pdfDocs[di];
+      var srcName = pendingFiles[di] ? pendingFiles[di].name : ('file-' + (di + 1) + '.pdf');
+      return rasterizeDocumentToBlob(d, function(p, n) {
+        var base = di / pdfDocs.length;
+        var share = 1 / pdfDocs.length;
+        $('progress-bar').style.width = Math.round(100 * (base + share * (p - 0.5) / n)) + '%';
+      }).then(function(blob) {
+        zip.file(safeZipBaseName(srcName) + '-unlocked.pdf', blob);
+        di++;
+        return addDocToZip();
+      });
+    }
+    addDocToZip().catch(failErr);
+  }
+
+  $('btn-unlocked-pdf').addEventListener('click', exportUnlockedRasterPdf);
 
   $('btn-add-person').addEventListener('click', addPersonRow);
 
@@ -661,8 +1517,8 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       showStatus('Wait until the progress bar has finished and the green message says the file is ready — then tap Find again.', 'info');
       return;
     }
-    if (!pdfDoc || !allLines.length) {
-      showStatus('No text is loaded for this file. Re-upload the PDF and wait for “Loaded N text lines”. If that never appears, the PDF has no real text to search (see the red message).', false);
+    if (!pdfDocs.length || !allLines.length) {
+      showStatus('No text is loaded. Re-upload PDF(s) and wait for “Loaded N text line(s)”. If that never appears, the PDFs have no readable text (see the red message).', false);
       return;
     }
     var persons = getPersonFields();
@@ -677,7 +1533,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       }
     }
     var matches = filterLines(persons);
-    renderMatches(matches);
+    renderMatches(matches, persons);
     if (matches.length === 0) {
       showStatus('No lines matched. Try a different part of the name or phone.', false);
     } else {
@@ -695,13 +1551,15 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       var b = lastResultBundle;
       var lines = [];
       lines.push('FILTERED BANK LINES — ' + originalName);
+      lines.push('SEARCH / PEOPLE: ' + (b.filterDescription || '—'));
+      lines.push('NOTE: Totals and sections below = only lines matching the search (not the whole PDF).');
       lines.push('');
       lines.push('=== CREDIT TRANSACTIONS (' + b.nCredit + ') ===');
       lines.push('Total credited (parsed sum): ' + formatINR(b.sumCredit));
       lines.push('');
       for (var i = 0; i < b.credits.length; i++) {
         var c = b.credits[i];
-        lines.push('Page ' + c.page + '\t' + (c.amount != null ? c.amount : '') + '\t' + c.text);
+        lines.push(rowLocationLabel(c) + '\t' + (c.amount != null ? c.amount : '') + '\t' + (c.mergedText || c.text));
       }
       lines.push('');
       lines.push('=== DEBIT TRANSACTIONS (' + b.nDebit + ') ===');
@@ -709,25 +1567,29 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       lines.push('');
       for (var j = 0; j < b.debits.length; j++) {
         var d = b.debits[j];
-        lines.push('Page ' + d.page + '\t' + (d.amount != null ? d.amount : '') + '\t' + d.text);
+        lines.push(rowLocationLabel(d) + '\t' + (d.amount != null ? d.amount : '') + '\t' + (d.mergedText || d.text));
       }
       if (b.unknown.length) {
         lines.push('');
         lines.push('=== OTHER / UNCLEAR (' + b.nUnknown + ') ===');
         for (var k = 0; k < b.unknown.length; k++) {
           var u = b.unknown[k];
-          lines.push('Page ' + u.page + '\t' + (u.amount != null ? u.amount : '') + '\t' + u.text);
+          lines.push(rowLocationLabel(u) + '\t' + (u.amount != null ? u.amount : '') + '\t' + (u.mergedText || u.text));
         }
       }
       lines.push('');
-      lines.push('=== SUMMARY ===');
+      lines.push('=== SUMMARY (matching lines only) ===');
       lines.push('Total amount credited (parsed): ' + formatINR(b.sumCredit));
       lines.push('Total amount debited (parsed): ' + formatINR(b.sumDebit));
       lines.push('Total credit transactions: ' + b.nCredit);
       lines.push('Total debit transactions: ' + b.nDebit);
       body = lines.join('\n');
     } else {
-      body = lastMatches.map(function(m) { return 'Page ' + m.page + '\t' + m.text; }).join('\n');
+      body = lastMatches.map(function(m) {
+        var ctx = typeof m.lineIndex === 'number' ? buildContextAround(allLines, m.lineIndex, 6, 14) : m.text;
+        var line = (ctx && ctx.length > (m.text || '').length + 12) ? ctx.replace(/\s+/g, ' ').trim() : m.text;
+        return rowLocationLabel(m) + '\t' + line;
+      }).join('\n');
     }
     var base = originalName.replace(/\.pdf$/i, '') + '-filtered';
     var blob = new Blob([body], { type: 'text/plain;charset=utf-8' });
@@ -770,7 +1632,15 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     var lineH = 13;
     doc.setFontSize(10);
     doc.text('Filtered transactions — ' + originalName, margin, y);
-    y += 20;
+    y += 14;
+    doc.setFontSize(8);
+    if (lastResultBundle && lastResultBundle.filterDescription) {
+      y = pdfAddLines(doc, margin, w, lineH, y, [
+        'Search: ' + lastResultBundle.filterDescription,
+        'Totals = matching lines only (not full statement).'
+      ]);
+      y += 4;
+    }
     doc.setFontSize(8.5);
 
     if (lastResultBundle) {
@@ -787,7 +1657,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       doc.setFont('helvetica', 'normal');
       for (var ci = 0; ci < b.credits.length; ci++) {
         var c = b.credits[ci];
-        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + c.page + '  ' + (c.amount != null ? formatINR(c.amount) + '  ' : '') + c.text]);
+        y = pdfAddLines(doc, margin, w, lineH, y, [rowLocationLabel(c) + '  ' + (c.amount != null ? formatINR(c.amount) + '  ' : '') + (c.mergedText || c.text)]);
       }
       y += 4;
       doc.setFont('helvetica', 'bold');
@@ -795,7 +1665,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       doc.setFont('helvetica', 'normal');
       for (var di = 0; di < b.debits.length; di++) {
         var d = b.debits[di];
-        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + d.page + '  ' + (d.amount != null ? formatINR(d.amount) + '  ' : '') + d.text]);
+        y = pdfAddLines(doc, margin, w, lineH, y, [rowLocationLabel(d) + '  ' + (d.amount != null ? formatINR(d.amount) + '  ' : '') + (d.mergedText || d.text)]);
       }
       if (b.unknown.length) {
         y += 4;
@@ -804,7 +1674,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
         doc.setFont('helvetica', 'normal');
         for (var ui = 0; ui < b.unknown.length; ui++) {
           var u = b.unknown[ui];
-          y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + u.page + '  ' + (u.amount != null ? formatINR(u.amount) + '  ' : '') + u.text]);
+          y = pdfAddLines(doc, margin, w, lineH, y, [rowLocationLabel(u) + '  ' + (u.amount != null ? formatINR(u.amount) + '  ' : '') + (u.mergedText || u.text)]);
         }
       }
       y += 8;
@@ -819,7 +1689,7 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
       doc.setFont('helvetica', 'normal');
     } else {
       for (var i = 0; i < lastMatches.length; i++) {
-        y = pdfAddLines(doc, margin, w, lineH, y, ['p.' + lastMatches[i].page + '  ' + lastMatches[i].text]);
+        y = pdfAddLines(doc, margin, w, lineH, y, [rowLocationLabel(lastMatches[i]) + '  ' + (lastMatches[i].mergedText || lastMatches[i].text)]);
       }
     }
     var base = originalName.replace(/\.pdf$/i, '') + '-filtered';

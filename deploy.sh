@@ -16,6 +16,7 @@ rsync -avz --progress \
   "$DIR/compress-pdf.html" \
   "$DIR/remove-pages.html" \
   "$DIR/remove-pdf-password.html" \
+  "$DIR/bank-transactions.html" \
   "$DIR/img-to-pdf.html" \
   "$DIR/pdf-to-img.html" \
   "$DIR/word-to-pdf.html" \
