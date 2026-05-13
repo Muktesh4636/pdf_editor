@@ -1,7 +1,28 @@
-# Example: static site for https://pdfforge.store
-# Copy ideas into /etc/nginx/sites-available/pdfforge.store (adjust paths & SSL).
+# pdfforge.store — nginx sketch (adjust paths, cert paths, and `www` as you like).
 #
+# Common cause of "400 Bad Request" from nginx:
+#   A plain HTTP request hit your HTTPS port (wrong URL, health check, or curl without -k/-L).
+# Fix: use https:// in the browser; on port 80, only plain HTTP (or redirect to HTTPS).
+#
+# If /api/* returns 400 JSON from the app, see server logs — usually missing/invalid PDF on archive routes.
+
+# --- Redirect HTTP → HTTPS (port 80) ---
+# server {
+#   listen 80;
+#   listen [::]:80;
 #   server_name pdfforge.store www.pdfforge.store;
+#   return 301 https://pdfforge.store$request_uri;
+# }
+
+# --- Main site (HTTPS) ---
+# server {
+#   listen 443 ssl http2;
+#   listen [::]:443 ssl http2;
+#   server_name pdfforge.store www.pdfforge.store;
+#
+#   ssl_certificate     /etc/letsencrypt/live/pdfforge.store/fullchain.pem;
+#   ssl_certificate_key /etc/letsencrypt/live/pdfforge.store/privkey.pem;
+#
 #   root /var/www/pdfforge.store;
 #   index index.html;
 #
@@ -9,4 +30,5 @@
 #     try_files $uri $uri/ =404;
 #   }
 #
-# Include API proxy (see nginx-api-proxy.conf.example) inside the same server { } if you use /api/.
+#   # Paste contents of deploy/nginx-api-proxy.conf.example here if the Node API runs on 127.0.0.1:3847
+# }
