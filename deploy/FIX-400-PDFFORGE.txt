@@ -1,0 +1,71 @@
+Fix "Bad Request (400)" for https://pdfforge.store/
+===============================================
+
+What is wrong (verified from outside):
+  - pdfforge.store points to the same IP as pimux.store.
+  - HTTPS still serves a certificate for pimux.store only (wrong name).
+  - There is NO nginx server_name for pdfforge.store on port 443, so nginx
+    uses the default SSL site (the Django app). Django rejects Host:
+    pdfforge.store -> HTTP 400.
+
+This is NOT fixed by deploy.sh or HTML changes. You must change nginx + TLS
+on the VPS.
+
+------------------------------------------------------------
+STEP A — On the VPS, create a vhost for pdfforge (static files)
+------------------------------------------------------------
+
+1) Put your static files here (same as deploy.sh default):
+     /var/www/pdfforge.store/
+   Run deploy from your laptop after SSH keys work:
+     ./deploy.sh
+
+2) Copy the full template from the repo onto the server (or paste it):
+     deploy/nginx-pdfforge.store.vhost.conf
+
+   Save as:
+     /etc/nginx/sites-available/pdfforge.store
+
+3) Edit that file:
+   - Set ssl_certificate and ssl_certificate_key to paths that exist.
+     If you do not have certs yet, go to STEP B first, then come back.
+
+4) Enable site and test nginx:
+     sudo ln -sf /etc/nginx/sites-available/pdfforge.store /etc/nginx/sites-enabled/
+     sudo nginx -t
+     sudo systemctl reload nginx
+
+------------------------------------------------------------
+STEP B — TLS certificate that includes pdfforge.store
+------------------------------------------------------------
+
+Your browser shows a cert error because only pimux.store is on the cert.
+
+Option 1 (easiest if Certbot nginx plugin works on your box):
+     sudo certbot --nginx -d pdfforge.store -d www.pdfforge.store
+
+Option 2 (HTTP-01 via webroot): ensure port 80 serves
+     /.well-known/acme-challenge/
+   for pdfforge.store (the template port 80 block does that), then:
+     sudo certbot certonly --webroot -w /var/www/pdfforge.store \
+       -d pdfforge.store -d www.pdfforge.store
+
+After certs exist, point the 443 server block to:
+     /etc/letsencrypt/live/pdfforge.store/fullchain.pem
+     /etc/letsencrypt/live/pdfforge.store/privkey.pem
+
+------------------------------------------------------------
+STEP C — Verify from anywhere
+------------------------------------------------------------
+
+     curl -sSI https://pdfforge.store/ | head -3
+     # Expect: HTTP/2 200  (not 400)
+
+     echo | openssl s_client -connect pdfforge.store:443 -servername pdfforge.store 2>/dev/null \
+       | openssl x509 -noout -ext subjectAltName
+     # Expect: DNS:pdfforge.store in SAN (not only pimux.store)
+
+If you still get 400 after this, run and inspect:
+     sudo nginx -T | grep -A2 server_name
+
+You must see pdfforge.store inside a server { listen 443 ssl ... } block.
