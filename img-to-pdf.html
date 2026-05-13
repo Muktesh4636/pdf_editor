@@ -5,7 +5,31 @@
 <title>Image to PDF Free Online — Convert JPG PNG to PDF | PDF Forge</title>
 <meta name="description" content="Convert JPG, PNG, WebP or GIF images to a PDF file online for free. Drag to reorder images."/>
 <link rel="canonical" href="https://pdfforge.store/img-to-pdf.html"/>
+<link rel="alternate" hreflang="en" href="https://pdfforge.store/img-to-pdf.html"/>
+<link rel="alternate" hreflang="x-default" href="https://pdfforge.store/img-to-pdf.html"/>
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"/>
+<meta name="author" content="PDF Forge"/>
+<meta name="theme-color" content="#e84040"/>
 <link rel="icon" href="/favicon.ico"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png"/>
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png"/>
+<link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png"/>
+<link rel="manifest" href="/manifest.json"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="PDF Forge"/>
+<meta property="og:title" content="Image to PDF Free Online — Convert JPG PNG to PDF | PDF Forge"/>
+<meta property="og:description" content="Convert JPG, PNG, WebP or GIF images to a PDF file online for free. Drag to reorder images."/>
+<meta property="og:url" content="https://pdfforge.store/img-to-pdf.html"/>
+<meta property="og:locale" content="en_US"/>
+<meta property="og:image" content="https://pdfforge.store/icon-512.png"/>
+<meta property="og:image:width" content="512"/>
+<meta property="og:image:height" content="512"/>
+<meta property="og:image:alt" content="PDF Forge — image to PDF"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Image to PDF Free Online — Convert JPG PNG to PDF | PDF Forge"/>
+<meta name="twitter:description" content="Convert JPG, PNG, WebP or GIF images to a PDF file online for free. Drag to reorder images."/>
+<meta name="twitter:image" content="https://pdfforge.store/icon-512.png"/>
+<meta name="twitter:image:alt" content="PDF Forge logo"/>
 <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -36,7 +60,11 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .img-del{position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.55);color:#fff;border:none;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:.75rem;cursor:pointer}
 .img-del:hover{background:var(--primary)}
 .drag-hint{color:var(--muted);font-size:.78rem;text-align:right;margin-top:6px}
-.actions{margin-top:24px;display:none;align-items:center;gap:14px;flex-wrap:wrap}
+.actions{margin-top:24px;display:none;flex-direction:column;align-items:stretch;gap:14px}
+.filename-row label{font-size:.82rem;font-weight:600;color:var(--muted);display:block;margin-bottom:6px}
+.filename-input{width:100%;max-width:480px;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:.95rem;background:#fff}
+.filename-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(232,64,64,.12)}
+.action-buttons{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
 .btn-convert{background:var(--primary);color:#fff;border:none;border-radius:10px;padding:13px 32px;font-size:1.05rem;font-weight:800;cursor:pointer}
 .btn-convert:hover{background:#c92b2b}
 .btn-convert:disabled{background:#ccc;cursor:not-allowed}
@@ -47,6 +75,9 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .progress-bar{height:6px;border-radius:100px;background:var(--primary);width:0%;transition:width .3s}
 #status{margin-top:12px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
 .status-ok{background:#d1fae5;color:#065f46}.status-err{background:#fee2e2;color:#991b1b}
+.mobile-dl-row{margin-top:14px;padding:14px 16px;background:#ecfdf5;border:1px solid #6ee7b7;border-radius:10px}
+.mobile-dl-row p{font-size:.85rem;color:#047857;margin-bottom:10px;line-height:1.45}
+.mobile-dl-link{display:inline-flex;align-items:center;justify-content:center;background:var(--primary);color:#fff!important;text-decoration:none;border-radius:10px;padding:12px 24px;font-weight:800;font-size:.95rem}
 </style>
 </head>
 <body>
@@ -81,18 +112,41 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
   <p class="drag-hint" id="drag-hint" style="display:none">↔ Drag thumbnails to reorder pages</p>
 
   <div class="actions" id="actions">
-    <button class="btn-convert" id="btn-convert">🖼️ Convert to PDF</button>
-    <button class="btn-clear" id="btn-clear">Clear All</button>
-    <span class="count-info" id="count-info"></span>
+    <div class="filename-row">
+      <label for="pdf-name">PDF file name</label>
+      <input type="text" id="pdf-name" class="filename-input" autocomplete="off" spellcheck="false" placeholder="images" maxlength="160" />
+      <span style="display:block;margin-top:6px;color:var(--muted);font-size:.78rem">“.pdf” is added automatically if you skip it.</span>
+    </div>
+    <div class="action-buttons">
+      <button type="button" class="btn-convert" id="btn-convert">⬇ Download PDF</button>
+      <button type="button" class="btn-clear" id="btn-clear">Clear All</button>
+      <span class="count-info" id="count-info"></span>
+    </div>
   </div>
   <div class="progress" id="progress"><div class="progress-bar" id="pbar"></div></div>
   <div id="status"></div>
+  <div id="mobile-dl-row" class="mobile-dl-row" aria-live="polite" hidden>
+    <p><strong>Phone or tablet?</strong> If nothing saved automatically, tap the button below — then Share → Save to Files (iOS) or Download (Android).</p>
+    <a id="mobile-pdf-link" class="mobile-dl-link" href="#" download target="_blank" rel="noopener">Open PDF to save</a>
+  </div>
 </main>
 <script>
-var images=[]; var dragSrcIdx=null;
+var images=[]; var dragSrcIdx=null; var pdfNameTouched=false;
 var dropZone=document.getElementById('drop-zone');
 var fileInput=document.getElementById('file-input');
 var grid=document.getElementById('img-grid');
+var pdfNameInput=document.getElementById('pdf-name');
+var mobileDlRow=document.getElementById('mobile-dl-row');
+var mobilePdfLink=document.getElementById('mobile-pdf-link');
+var blobUrlHold=null;
+
+function hideMobileDl(){
+  if(mobileDlRow) mobileDlRow.hidden=true;
+  if(mobilePdfLink){mobilePdfLink.removeAttribute('href');}
+  if(blobUrlHold){try{URL.revokeObjectURL(blobUrlHold);}catch(e){}blobUrlHold=null;}
+}
+
+pdfNameInput.addEventListener('input',function(){pdfNameTouched=true;});
 
 dropZone.addEventListener('dragover',function(e){e.preventDefault();dropZone.classList.add('over');});
 dropZone.addEventListener('dragleave',function(){dropZone.classList.remove('over');});
@@ -101,17 +155,32 @@ dropZone.addEventListener('click',function(){fileInput.click();});
 document.getElementById('btn-pick').addEventListener('click',function(e){e.stopPropagation();fileInput.click();});
 fileInput.addEventListener('change',function(){addFiles(Array.from(fileInput.files));fileInput.value='';});
 
+function suggestedPdfBasename(){
+  if(images.length===0) return 'images';
+  var stem=(images[0].name||'image').replace(/\.[^/.]+$/i,'');
+  stem=stem.replace(/[^a-zA-Z0-9._\- ]+/g,'-').replace(/-+/g,'-').trim().slice(0,72)||'images';
+  if(images.length>1) return stem+'-combined';
+  return stem;
+}
+
 function addFiles(files){
   files.forEach(function(f){if(f.type.startsWith('image/')) images.push(f);});
   renderGrid();
 }
 
 function renderGrid(){
+  hideMobileDl();
   grid.innerHTML='';
   document.getElementById('drag-hint').style.display=images.length>1?'block':'none';
   document.getElementById('actions').style.display=images.length>0?'flex':'none';
   document.getElementById('settings').style.display=images.length>0?'block':'none';
   document.getElementById('count-info').textContent=images.length+' image'+(images.length!==1?'s':'');
+  if(images.length>0){
+    if(!pdfNameTouched) pdfNameInput.value=suggestedPdfBasename();
+  }else{
+    pdfNameTouched=false;
+    pdfNameInput.value='';
+  }
   images.forEach(function(f,i){
     var card=document.createElement('div');
     card.className='img-card'; card.draggable=true; card.dataset.idx=i;
@@ -134,14 +203,70 @@ function renderGrid(){
   });
 }
 
-document.getElementById('btn-clear').addEventListener('click',function(){images=[];renderGrid();showStatus('','');});
+document.getElementById('btn-clear').addEventListener('click',function(){images=[];pdfNameTouched=false;renderGrid();showStatus('','');});
+
+function getOutputPdfFilename(){
+  var raw=(pdfNameInput.value||'').trim()||'images';
+  var base=raw.replace(/\.pdf$/i,'').replace(/[^a-zA-Z0-9._\- ]+/g,'-').replace(/-+/g,'-').trim().slice(0,120)||'images';
+  return base+'.pdf';
+}
+
+function downloadPdfBlob(blob, filename){
+  hideMobileDl();
+  var coarse=typeof window.matchMedia==='function'&&window.matchMedia('(hover:none) and (pointer:coarse)').matches;
+  var ua=navigator.userAgent||'';
+  var isIOS=/iP(ad|hone|od)/i.test(ua)||(navigator.platform==='MacIntel'&&(navigator.maxTouchPoints||0)>1);
+  var needManual=coarse||isIOS;
+
+  function fallbackClick(url){
+    var a=document.createElement('a');
+    a.href=url;
+    a.download=filename;
+    if(needManual) a.target='_blank';
+    a.rel='noopener';
+    a.style.cssText='position:fixed;left:-9999px;top:0;opacity:0;width:1px;height:1px;';
+    document.body.appendChild(a);
+    try{a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));}
+    catch(e1){try{a.click();}catch(e2){}}
+    setTimeout(function(){if(a.parentNode)a.parentNode.removeChild(a);},300);
+    if(needManual&&mobileDlRow&&mobilePdfLink){
+      blobUrlHold=url;
+      mobilePdfLink.href=url;
+      mobilePdfLink.setAttribute('download',filename);
+      mobileDlRow.hidden=false;
+      showStatus('✅ PDF ready — use Open PDF to save if your browser did not download it.','ok');
+      setTimeout(function(){try{if(blobUrlHold){URL.revokeObjectURL(blobUrlHold);blobUrlHold=null;}hideMobileDl();}catch(e3){}},4*60*1000);
+    }else{
+      setTimeout(function(){try{URL.revokeObjectURL(url);}catch(e4){}},90000);
+      showStatus('✅ PDF downloaded: '+filename,'ok');
+    }
+  }
+
+  try{
+    if(navigator.share&&typeof File!=='undefined'){
+      var f=new File([blob],filename,{type:'application/pdf'});
+      if(navigator.canShare&&navigator.canShare({files:[f]})){
+        navigator.share({files:[f],title:filename}).then(function(){
+          showStatus('✅ Choose “Save to Files” or Drive in the share sheet.','ok');
+        }).catch(function(err){
+          if(err&&err.name==='AbortError') return;
+          var u=URL.createObjectURL(blob); fallbackClick(u);
+        });
+        return;
+      }
+    }
+  }catch(e0){}
+  fallbackClick(URL.createObjectURL(blob));
+}
 
 document.getElementById('btn-convert').addEventListener('click',async function(){
   if(images.length===0){showStatus('Add at least one image.','err');return;}
-  var btn=this; btn.disabled=true; btn.textContent='Converting...';
+  hideMobileDl();
+  var btn=this; btn.disabled=true; var prevText=btn.textContent; btn.textContent='Building PDF…';
   var prog=document.getElementById('progress'),pbar=document.getElementById('pbar');
   prog.style.display='block'; pbar.style.width='5%'; showStatus('','');
   var pageSize=document.getElementById('page-size').value;
+  var outName=getOutputPdfFilename();
   try{
     var pdf=await PDFLib.PDFDocument.create();
     for(var i=0;i<images.length;i++){
@@ -150,7 +275,6 @@ document.getElementById('btn-convert').addEventListener('click',async function()
       var imgEmbed;
       if(f.type==='image/jpeg'||f.type==='image/jpg') imgEmbed=await pdf.embedJpg(buf);
       else{
-        /* Convert to PNG via canvas */
         var bitmap=await createImageBitmap(f);
         var cv=document.createElement('canvas');
         cv.width=bitmap.width; cv.height=bitmap.height;
@@ -171,13 +295,13 @@ document.getElementById('btn-convert').addEventListener('click',async function()
     }
     var bytes=await pdf.save();
     pbar.style.width='100%';
-    var blob=new Blob([bytes],{type:'application/pdf'});
-    var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='images.pdf';
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-    showStatus('✅ PDF created! Download started.','ok');
-  }catch(e){showStatus('Error: '+e.message,'err');}
-  btn.disabled=false; btn.textContent='🖼️ Convert to PDF';
-  setTimeout(function(){prog.style.display='none';pbar.style.width='0%';},1500);
+    downloadPdfBlob(new Blob([bytes],{type:'application/pdf'}), outName);
+  }catch(e){
+    showStatus('Error: '+e.message,'err');
+  }
+  btn.disabled=false;
+  btn.textContent=prevText;
+  setTimeout(function(){prog.style.display='none';pbar.style.width='0%';},1200);
 });
 
 function showStatus(msg,type){
@@ -187,5 +311,6 @@ function showStatus(msg,type){
 }
 </script>
 <footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdfforge.store/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
+<script src="/install-banner.js" defer></script>
 </body>
 </html>

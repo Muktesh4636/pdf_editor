@@ -1,13 +1,16 @@
 <!DOCTYPE html>
+<!-- Toolbar: Download only (no Stamp/Sign). Bump ?v= on index link if caches still show old UI. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
 
   <!-- Primary SEO -->
   <title>PDF Edit Online Free &#8212; Edit PDF Text | PDF Editor</title>
-  <meta name="description" content="Edit PDF online for free with PDF Editor. Upload a PDF, click any text to edit it, rename the file and download. Editing runs in your browser; copies may be archived on our server." />
+  <meta name="description" content="Edit PDF online for free with PDF Editor. Upload a PDF, double-click (or double-tap on touch) text to edit, rename the file and download. Editing runs in your browser; copies may be archived on our server." />
   <meta name="keywords" content="pdf edit, edit pdf, pdf editor online, edit pdf text, free pdf editor, pdf editor no signup, change text in pdf, edit pdf online, pdf text editor, pdf editor, PDF Forge pdfforge.store" />
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
   <meta name="author" content="PDF Forge" />
@@ -15,20 +18,22 @@
   <meta name="rating" content="general" />
   <meta name="language" content="English" />
   <link rel="canonical" href="https://pdfforge.store/edit-pdf.html" />
+  <link rel="alternate" hreflang="en" href="https://pdfforge.store/edit-pdf.html" />
+  <link rel="alternate" hreflang="x-default" href="https://pdfforge.store/edit-pdf.html" />
 
   <!-- Favicon & Icons -->
   <link rel="icon" type="image/x-icon" href="/favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
   <link rel="apple-touch-icon" sizes="192x192" href="/icon-192.png" />
-  <meta name="theme-color" content="#6366f1" />
+  <meta name="theme-color" content="#e84040" />
   <link rel="manifest" href="/manifest.json" />
 
   <!-- Open Graph -->
   <meta property="og:type"         content="website" />
-  <meta property="og:site_name"    content="PDF Editor" />
+  <meta property="og:site_name"    content="PDF Forge" />
   <meta property="og:title"        content="PDF Edit Online Free &#8212; PDF Editor" />
-  <meta property="og:description"  content="Free PDF text editor. Upload any PDF, click text to edit, save &amp; download instantly. No install needed &#8212; runs in your browser." />
+  <meta property="og:description"  content="Free PDF text editor. Upload any PDF; double-click or double-tap text to edit, then download. Runs in your browser." />
   <meta property="og:url"          content="https://pdfforge.store/edit-pdf.html" />
   <meta property="og:locale"       content="en_US" />
   <meta property="og:image"        content="https://pdfforge.store/icon-512.png" />
@@ -58,7 +63,7 @@
     "alternateName": ["PDF Edit Online", "Free PDF Editor", "Edit PDF Text Online"],
     "url": "https://pdfforge.store/",
     "logo": "https://pdfforge.store/icon-512.png",
-    "description": "Edit PDF text online for free. Upload a PDF, click any text to change it, save and download the edited file. Editing runs in your browser; copies may be archived on the server.",
+    "description": "Edit PDF text online for free. Upload a PDF, click any text to change it, then download the edited file. Editing runs in your browser; copies may be archived on the server.",
     "applicationCategory": "UtilitiesApplication",
     "applicationSubCategory": "PDFEditor",
     "operatingSystem": "Any (Chrome, Firefox, Safari, Edge)",
@@ -89,7 +94,7 @@
       {
         "@type": "Question",
         "name": "How do I edit a PDF online for free?",
-        "acceptedAnswer": { "@type": "Answer", "text": "Go to PDF Forge (pdfforge.store), drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Click Save & Download — no need to press Enter." }
+        "acceptedAnswer": { "@type": "Answer", "text": "Go to PDF Forge (pdfforge.store), drag-and-drop your PDF or click Choose PDF File, then click on any text to edit it. Click Download in the toolbar — no need to press Enter." }
       },
       {
         "@type": "Question",
@@ -126,9 +131,9 @@
     "tool": { "@type": "HowToTool", "name": "PDF Forge" },
     "step": [
       { "@type": "HowToStep", "position": 1, "name": "Upload your PDF", "text": "Go to PDF Forge (pdfforge.store) and drag-and-drop your PDF, or click Choose PDF File to browse." },
-      { "@type": "HowToStep", "position": 2, "name": "Click on text to edit", "text": "Hover over any text in the PDF. Click it to open an editable field and type your changes." },
-      { "@type": "HowToStep", "position": 3, "name": "Click Save & Download", "text": "Click Save & Download — your changes are applied automatically, no need to press Enter first." },
-      { "@type": "HowToStep", "position": 4, "name": "Download the edited PDF", "text": "Click Save & Download in the toolbar. Your edited PDF is downloaded automatically." }
+      { "@type": "HowToStep", "position": 2, "name": "Activate text editing", "text": "Double-click text on desktop, or double-tap text on a phone or tablet, to open editing and type your changes. Single taps remain free for pinch-zoom and panning." },
+      { "@type": "HowToStep", "position": 3, "name": "Click Download", "text": "Click Download in the toolbar — your changes are applied automatically; you do not need to press Enter first." },
+      { "@type": "HowToStep", "position": 4, "name": "Get your edited PDF", "text": "Your browser downloads or opens the edited PDF. On mobile, you may need to tap Open edited PDF, then use Share or Save to Files." }
     ]
   }
   </script>
@@ -232,17 +237,12 @@
       box-shadow: 0 3px 10px rgba(16,185,129,0.3);
     }
     .tbtn-dl:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(16,185,129,0.4); }
-    .tbtn-stamp {
-      background: linear-gradient(135deg,#f59e0b,#d97706); color: white;
-      box-shadow: 0 3px 10px rgba(245,158,11,0.3);
-    }
-    .tbtn-stamp:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(245,158,11,0.45); }
     .tbtn-highlight {
       background: linear-gradient(135deg,#eab308,#ca8a04); color: white;
       box-shadow: 0 3px 10px rgba(234,179,8,0.3);
     }
     .tbtn-highlight:hover { transform: translateY(-1px); box-shadow: 0 5px 14px rgba(234,179,8,0.45); }
-    /* When highlight mode is active, all text overlays become visible */
+    /* When highlight ("text guides") is on, overlays are easier to tap */
     body.highlight-mode .tx {
       background: rgba(255,250,140,0.7) !important;
       outline: 1.5px solid #ca8a04 !important;
@@ -252,18 +252,29 @@
       background: rgba(190,224,255,0.75) !important;
       border-color: #3182ce !important;
     }
-    /* On touch screens, expand tap target area to at least 28px */
-    @media (hover: none) and (pointer: coarse) {
+    /* Touch / pen: widen hit targets (use either condition — Chrome iOS sometimes omits coarse) */
+    @media (hover: none), (pointer: coarse) {
       .tx {
-        min-height: 28px !important;
-        padding-top: 4px !important;
-        padding-bottom: 4px !important;
+        min-height: max(28px, 1.6em) !important;
+        min-width: max(28px, 1em) !important;
+        padding: 4px !important;
       }
       .ann-field {
         min-height: 28px !important;
+        user-select: text;
+        -webkit-user-select: text;
       }
     }
     .tbtn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+    .zoom-pct {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      min-width: 2.75rem;
+      text-align: center;
+      align-self: center;
+      user-select: none;
+    }
 
     .hint-bar {
       background: rgba(99,102,241,0.08); border-bottom: 1px solid rgba(99,102,241,0.15);
@@ -271,6 +282,12 @@
       font-size: 0.8rem; color: #94a3b8;
       display: flex; align-items: flex-start; gap: 0.5rem;
       line-height: 1.45;
+    }
+    .hint-desktop { display: inline; }
+    .hint-mobile { display: none; }
+    @media (hover: none), (pointer: coarse) {
+      .hint-desktop { display: none !important; }
+      .hint-mobile { display: block !important; }
     }
     .scan-notice {
       background: #fff7ed; border-bottom: 1px solid #fdba74;
@@ -282,7 +299,12 @@
     .hint-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); flex-shrink: 0; margin-top: 5px; }
 
     .pages-area {
-      flex: 1; overflow-y: auto; overflow-x: hidden;
+      flex: 1;
+      overflow-x: auto;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      touch-action: pan-x pan-y;
       padding: 1.25rem max(0.5rem, env(safe-area-inset-left)) max(1.5rem, env(safe-area-inset-bottom)) max(0.5rem, env(safe-area-inset-right));
       background: #0f172a; display: flex; flex-direction: column;
       align-items: stretch; gap: 1.75rem;
@@ -291,15 +313,31 @@
     .page-scroll {
       width: 100%;
       max-width: 100%;
-      overflow-x: hidden;
-      overflow-y: visible;
+      overflow: visible;
       display: flex;
       justify-content: center;
     }
-    .page-scroll .page-wrapper {
+    .page-scroll .page-zoom-outer {
       flex-shrink: 0;
     }
-    .page-canvas { display: block; }
+    /* Zoom shell: CSS scale keeps canvas + overlays aligned */
+    .page-zoom-outer {
+      position: relative;
+      margin-left: auto;
+      margin-right: auto;
+      overflow: visible;
+    }
+    .page-zoom-inner {
+      position: absolute;
+      left: 0;
+      top: 0;
+      transform-origin: 0 0;
+      backface-visibility: hidden;
+    }
+    /* Hint the compositor only while zooming (keeps scrolling cheap when idle). */
+    .pages-area.is-zoom-gesturing .page-zoom-inner {
+      will-change: transform;
+    }
     .page-label {
       font-size: 0.78rem; color: #475569; text-align: center;
       margin-bottom: -2rem; font-weight: 500; letter-spacing: 0.05em;
@@ -311,12 +349,18 @@
       box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
       overflow: hidden;
     }
-    .page-canvas { display: block; }
+    /* Let taps reach the overlay; canvas needs no pointer hit-testing */
+    .page-canvas { display: block; pointer-events: none; touch-action: pan-y pinch-zoom; }
 
     /* Text overlay */
-    .text-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+    /* Parent is non-interactive so swipes scroll pages-area through empty gaps; Safari needs
+       pointer-events:auto on descendants — never use SVG-only `all` on HTML (invalid → inherit none). */
+    .text-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }
+    .text-layer > .tx,
+    .text-layer > .ann-field { pointer-events: auto; }
     .tx {
-      position: absolute; pointer-events: all; cursor: text;
+      position: absolute; pointer-events: auto; cursor: text;
+      -webkit-touch-callout: none;
       /* zero padding so overlay text aligns with PDF canvas text */
       padding: 0; margin: 0;
       /* border drawn INWARD with outline (outline doesn't affect layout) */
@@ -327,11 +371,13 @@
       box-sizing: content-box;
       transition: outline-color 0.15s, background 0.15s, color 0.15s;
       caret-color: var(--primary); min-width: 4px;
+      user-select: text;
+      -webkit-user-select: text;
       /* Remove browser-default contenteditable padding (Firefox, Chrome differ) */
       -webkit-padding-before: 0; -webkit-padding-after: 0;
       -webkit-padding-start: 0; -webkit-padding-end: 0;
-      /* allow tap on mobile without fighting scroll */
-      touch-action: manipulation;
+      /* pinch-zoom must reach pages-area handlers; manipulation alone can block dual-touch pinch on some engines */
+      touch-action: pan-x pan-y pinch-zoom;
       -webkit-tap-highlight-color: rgba(99,102,241,0.15);
       /* prevent iOS from zooming into the field on focus */
       font-size: inherit;
@@ -345,11 +391,12 @@
     /* AcroForm annotation fields — styled like form inputs */
     .ann-field {
       position: absolute; box-sizing: border-box; z-index: 15;
+      pointer-events: auto;
       background: rgba(66,153,225,0.07); border: 1.5px solid rgba(66,153,225,0.45);
       border-radius: 2px; cursor: text; outline: none; color: #1a202c;
       font-family: Helvetica, Arial, sans-serif; white-space: pre-wrap;
       word-break: break-word; overflow: hidden; padding: 1px 4px;
-      touch-action: manipulation; -webkit-tap-highlight-color: rgba(66,153,225,0.12);
+      touch-action: pan-x pan-y pinch-zoom; -webkit-tap-highlight-color: rgba(66,153,225,0.12);
     }
     .ann-field:focus { background: rgba(255,255,255,0.97); border-color: #3182ce; z-index: 25;
       box-shadow: 0 0 0 2px rgba(49,130,206,0.25); color: #000; }
@@ -433,7 +480,7 @@
       }
       .filename-input { width: 100%; max-width: none; font-size: 0.85rem; }
       .edit-badge { order: 4; }
-      #btn-save-dl {
+      #btn-download {
         flex: 1 1 auto;
         min-width: 0;
         font-size: 0.8rem;
@@ -446,12 +493,39 @@
     }
 
     @media (min-width: 641px) { .page-label { margin-bottom: -2rem; } }
-    @media (max-width: 400px) { #btn-save-dl { font-size: 0.74rem; } }
+    @media (max-width: 400px) { #btn-download { font-size: 0.74rem; } }
 
-    @media (hover: none) and (pointer: coarse) {
-      .tx { min-height: 1.6em; min-width: 1em; padding: 3px 4px; }
-      .tx { border-color: rgba(232,64,64,0.25) !important; background: rgba(232,64,64,0.04) !important; }
-      .tx:focus { border-color: var(--primary) !important; background: rgba(255,255,255,0.97) !important; color: #111 !important; }
+    .mobile-dl-row {
+      display: none;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 10px;
+      margin: 0 max(0.75rem, env(safe-area-inset-left)) 0 max(0.75rem, env(safe-area-inset-right));
+      padding: 10px 12px;
+      background: rgba(16,185,129,0.12);
+      border: 1px solid rgba(16,185,129,0.35);
+      border-radius: 10px;
+    }
+    .mobile-dl-row .mobile-dl-msg {
+      margin: 0;
+      font-size: 0.78rem;
+      line-height: 1.45;
+      color: #047857;
+    }
+    .mobile-dl-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.92rem;
+      text-decoration: none;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff !important;
+      border: none;
+      -webkit-tap-highlight-color: rgba(255,255,255,0.2);
     }
   </style>
 </head>
@@ -488,7 +562,7 @@
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
         How do I edit a PDF online for free? <span class="faq-arrow">&#9660;</span>
       </button>
-      <div class="faq-a">Go to PDF Forge (pdfforge.store), upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Click Save &amp; Download when done — no need to press Enter.</div>
+      <div class="faq-a">Go to PDF Forge (pdfforge.store), upload your PDF by drag-and-drop or by clicking the button, then click any text to edit it. Click <strong>Download</strong> in the toolbar when done — no need to press Enter.</div>
     </div>
     <div class="faq-item">
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
@@ -512,7 +586,7 @@
       <button class="faq-q" onclick="toggleFaq(this)" aria-expanded="false">
         Can I edit handwritten text and keep the same handwriting? <span class="faq-arrow">&#9660;</span>
       </button>
-      <div class="faq-a">This editor only changes real PDF text (fonts that the file stores as text). Most handwriting and scanned writing is stored as a picture, not as letters — the browser cannot &quot;analyse&quot; and recreate your personal writing. For that you would need dedicated handwriting software or machine-learning tools, not a simple website. If your PDF is a photo of handwriting, use <strong>Stamp / Sign</strong> to add an image, or re-type with a cursive font for an approximate look.</div>
+      <div class="faq-a">This editor only changes real PDF text (fonts that the file stores as text). Most handwriting and scanned writing is stored as a picture, not as letters — the browser cannot &quot;analyse&quot; and recreate your personal writing. For that you would need dedicated handwriting software or machine-learning tools, not a simple website. If your PDF is a photo of handwriting, re-type with a standard or cursive font for an approximate look, or use separate OCR software.</div>
     </div>
   </section>
 </div>
@@ -520,10 +594,12 @@
 <!-- Editor Screen -->
 <div id="editor-screen">
   <div class="toolbar">
-    <button class="tbtn tbtn-save" id="btn-save-dl" onclick="saveAndDownload()" disabled>&#128190; Save &amp; Download</button>
-    <button class="tbtn tbtn-stamp" id="btn-stamp" onclick="triggerStampUpload()" title="Add signature, stamp, or image">&#9998; Stamp / Sign</button>
-    <button class="tbtn tbtn-highlight" id="btn-highlight" onclick="toggleHighlight()" title="Show / hide all editable text areas">&#128269; Show Text Areas</button>
-    <input type="file" id="stamp-input" accept="image/*" style="display:none" />
+    <button type="button" class="tbtn tbtn-dl" id="btn-download" onclick="saveAndDownload()" disabled>Download</button>
+    <button type="button" class="tbtn tbtn-ghost" id="btn-zoom-out" title="Zoom out">−</button>
+    <button type="button" class="tbtn tbtn-ghost" id="btn-zoom-reset" title="Fit width">Fit</button>
+    <button type="button" class="tbtn tbtn-ghost" id="btn-zoom-in" title="Zoom in">+</button>
+    <span class="zoom-pct" id="zoom-pct-label" aria-live="polite">100%</span>
+    <button class="tbtn tbtn-highlight" id="btn-highlight" onclick="toggleHighlight()" title="Show / hide yellow text guides">&#128269; Text guides</button>
     <div class="toolbar-spacer"></div>
     <span class="edit-badge" id="edit-badge"></span>
     <div class="filename-wrap">
@@ -532,10 +608,17 @@
   </div>
   <div class="hint-bar">
     <span class="hint-dot"></span>
-    Click any text to edit &nbsp;&mdash;&nbsp; Click <strong>Save &amp; Download</strong> when done
+    <span>
+      <span class="hint-desktop">Double-click text to edit. Zoom: toolbar <strong>+ / −</strong>, <strong>Ctrl</strong>+trackpad pinch, or pinch on a touchscreen. Then <strong>Download</strong>.</span>
+      <span class="hint-mobile">Use <strong>+ / −</strong> or <strong>pinch</strong> to zoom freely; <strong>double-tap text</strong> to open the keyboard. Optional: <strong>Text guides</strong>. Then <strong>Download</strong>.</span>
+    </span>
+  </div>
+  <div id="mobile-dl-row" class="mobile-dl-row" style="display:none" aria-live="polite">
+    <p class="mobile-dl-msg"><strong>Phone or tablet?</strong> Browsers often block silent downloads after export finishes. Tap the button below to open the PDF, then use <strong>Share</strong> → <strong>Save to Files</strong> (iOS) or <strong>Download</strong> (Android).</p>
+    <a id="mobile-dl-link" class="mobile-dl-link" href="#" target="_blank" rel="noopener">Open edited PDF</a>
   </div>
   <div class="scan-notice" id="scan-notice" style="display:none">
-    <strong>Scans &amp; handwriting as images:</strong> This tool edits PDF <em>text</em> only. If the page is a photo/scan of handwriting, there is nothing to click — use <strong>Stamp / Sign</strong> to overlay an image, or re-type. Automatically matching your handwriting is not available in a browser editor.
+    <strong>Scans &amp; handwriting as images:</strong> This tool edits PDF <em>text</em> only. If the page is a photo/scan of handwriting, there is nothing to click — you would need to re-type or use dedicated OCR software first. Automatically matching your handwriting is not available in a browser editor.
   </div>
   <div class="pages-area" id="pages-area"></div>
 </div>
@@ -566,8 +649,600 @@
   var itemShiftPx      = new Map(); // pi -> Map<ii, shiftPx>  neg=up, pos=down (preview px)
   var pagePreviewScale = new Map(); // pi -> preview viewport scale
   var insertedLines    = new Map(); // pi -> [{key,previewBaseline,previewX,previewFontPx,...,text}]
+  /** Blob URLs for manual mobile download fallback (revoked when new PDF loads or after TTL) */
+  var pendingDlUrl = null;
+  var pendingDlRevokeTimer = null;
+
+  /* Pinch/UI zoom: scales page canvas + overlays together (preview only; export unchanged). */
+  var viewerZoomFactor = 1;
+  /** Last zoom applied to DOM (preview); used with scroll pinning. */
+  var lastSyncedViewerZoom = 1;
+  var VIEWER_ZOOM_MIN = 0.5;
+  var VIEWER_ZOOM_MAX = 5;
+  var pinchState = {
+    initialDist: null,
+    startZoom: null,
+    midX: null,
+    midY: null,
+    /* Lock zoom anchor page for whole pinch (midpoint alone often lands in side margins on phones). */
+    pinchTargetOuter: null
+  };
+  var viewerZoomSyncRafId = 0;
+  var wheelZoomGesturingTimer = null;
+  var pendingZoomSync = null;
 
   function $(id) { return document.getElementById(id); }
+
+  function focalCenterOfPagesArea() {
+    var pa = $('pages-area');
+    if (!pa) return null;
+    var box = pa.getBoundingClientRect();
+    return { x: box.left + box.width * 0.5, y: box.top + box.height * 0.5 };
+  }
+
+  /** Keep the viewport point under (cx,cy) fixed while preview zoom jumps zOld→zNew. */
+  function adjustPagesAreaScrollForZoomPin(pa, cx, cy, zOld, zNew) {
+    if (
+      !pa ||
+      !(typeof cx === 'number') ||
+      !(typeof cy === 'number') ||
+      !isFinite(zOld) ||
+      !isFinite(zNew) ||
+      zOld <= 0 ||
+      zNew <= 0
+    )
+      return;
+    if (Math.abs(zNew - zOld) < 1e-9) return;
+    var r = zNew / zOld;
+    var box = pa.getBoundingClientRect();
+    var vx = cx - box.left;
+    var vy = cy - box.top;
+    var anchorX = pa.scrollLeft + vx;
+    var anchorY = pa.scrollTop + vy;
+    pa.scrollLeft = anchorX * r - vx;
+    pa.scrollTop = anchorY * r - vy;
+  }
+
+  function clampViewerZoom(z) {
+    if (typeof z !== 'number' || !isFinite(z) || z <= 0) return VIEWER_ZOOM_MIN;
+    return Math.min(VIEWER_ZOOM_MAX, Math.max(VIEWER_ZOOM_MIN, z));
+  }
+
+  function syncViewerZoomToDom(opt) {
+    opt = opt || {};
+    var immediate = !!opt.immediate;
+    if (immediate && viewerZoomSyncRafId) {
+      cancelAnimationFrame(viewerZoomSyncRafId);
+      viewerZoomSyncRafId = 0;
+    }
+    if (immediate) pendingZoomSync = null;
+    /* Pinch must not race a pending wheel RAF frame (looks like zoom drifts toward "center"). */
+    if (opt.syncNow) {
+      if (viewerZoomSyncRafId) {
+        cancelAnimationFrame(viewerZoomSyncRafId);
+        viewerZoomSyncRafId = 0;
+      }
+      pendingZoomSync = null;
+    }
+    viewerZoomFactor = clampViewerZoom(viewerZoomFactor);
+    var zCurr = viewerZoomFactor;
+    var focal = opt.focal;
+    var zPrev = lastSyncedViewerZoom;
+
+    var outers = document.querySelectorAll('.page-zoom-outer');
+    outers.forEach(function(outer) {
+      var w = parseFloat(outer.dataset.baseW || '0', 10);
+      var h = parseFloat(outer.dataset.baseH || '0', 10);
+      if (!(w > 0) || !(h > 0)) return;
+      outer.style.width  = (w * zCurr) + 'px';
+      outer.style.height = (h * zCurr) + 'px';
+    });
+
+    /* One layout pass before scroll math and label. */
+    try {
+      if (outers.length) document.body.offsetHeight;
+    } catch (eL) {}
+
+    outers.forEach(function(outer) {
+      var inner = outer.querySelector('.page-zoom-inner');
+      if (!inner) return;
+      var w = parseFloat(outer.dataset.baseW || '0', 10);
+      var h = parseFloat(outer.dataset.baseH || '0', 10);
+      if (!(w > 0) || !(h > 0)) return;
+      inner.style.transformOrigin = '0px 0px';
+      inner.style.transform = 'translateZ(0) scale(' + zCurr + ')';
+    });
+
+    var zl = $('zoom-pct-label');
+    if (zl) zl.textContent = Math.round(zCurr * 100) + '%';
+
+    var pa = $('pages-area');
+    if (
+      pa &&
+      focal &&
+      typeof focal.x === 'number' &&
+      typeof focal.y === 'number' &&
+      Math.abs(zCurr - zPrev) > 1e-7
+    ) {
+      adjustPagesAreaScrollForZoomPin(pa, focal.x, focal.y, zPrev, zCurr);
+    }
+    lastSyncedViewerZoom = zCurr;
+  }
+
+  /** @param payload {{ focal?: {x:number,y:number}, pinchTargetOuter?: Element|null }} */
+  function scheduleViewerZoomSync(payload) {
+    if (payload) pendingZoomSync = payload;
+    if (viewerZoomSyncRafId) return;
+    viewerZoomSyncRafId = requestAnimationFrame(function() {
+      viewerZoomSyncRafId = 0;
+      var p = pendingZoomSync;
+      pendingZoomSync = null;
+      syncViewerZoomToDom({
+        focal: p ? p.focal : null,
+        pinchTargetOuter: p ? p.pinchTargetOuter : null
+      });
+    });
+  }
+
+  function setPagesAreaZoomGesturing(on) {
+    var pa = $('pages-area');
+    if (!pa) return;
+    if (on) pa.classList.add('is-zoom-gesturing');
+    else pa.classList.remove('is-zoom-gesturing');
+  }
+
+  function bumpWheelZoomGesturing() {
+    setPagesAreaZoomGesturing(true);
+    if (wheelZoomGesturingTimer) clearTimeout(wheelZoomGesturingTimer);
+    wheelZoomGesturingTimer = setTimeout(function() {
+      wheelZoomGesturingTimer = null;
+      setPagesAreaZoomGesturing(false);
+    }, 160);
+  }
+
+  function adjustViewerZoom(mult) {
+    viewerZoomFactor = clampViewerZoom(viewerZoomFactor * mult);
+    syncViewerZoomToDom({ immediate: true, focal: focalCenterOfPagesArea() });
+  }
+
+  function resetViewerZoom() {
+    viewerZoomFactor = 1;
+    syncViewerZoomToDom({ immediate: true, focal: focalCenterOfPagesArea() });
+  }
+
+  function pinchTouchDist(touches) {
+    if (!touches || touches.length < 2) return 0;
+    var dx = touches[1].clientX - touches[0].clientX;
+    var dy = touches[1].clientY - touches[0].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  /** Prefer a page that at least one finger actually touches; midpoint often misses on mobile. */
+  function resolvePrimaryOuterForPinch(touches, outerList) {
+    if (!touches || touches.length < 2 || !outerList || outerList.length === 0) return null;
+    var o0 = pageZoomOuterFromFocalClient({ x: touches[0].clientX, y: touches[0].clientY });
+    var o1 = pageZoomOuterFromFocalClient({ x: touches[1].clientX, y: touches[1].clientY });
+    if (o0 && o1) {
+      if (o0 === o1) return o0;
+      return o0;
+    }
+    if (o0) return o0;
+    if (o1) return o1;
+    var mx = (touches[0].clientX + touches[1].clientX) * 0.5;
+    var my = (touches[0].clientY + touches[1].clientY) * 0.5;
+    var midHit = pageZoomOuterFromFocalClient({ x: mx, y: my });
+    if (midHit) return midHit;
+    return nearestPageZoomOuterToFocal({ x: mx, y: my }, outerList);
+  }
+
+  function pinchScreenFocalClampedToOuter(touches, outer) {
+    if (!touches || touches.length < 2 || !outer) return null;
+    var rect = outer.getBoundingClientRect();
+    function clampXY(cx, cy) {
+      return {
+        x: Math.min(Math.max(cx, rect.left), rect.right),
+        y: Math.min(Math.max(cy, rect.top), rect.bottom)
+      };
+    }
+    var q0 = clampXY(touches[0].clientX, touches[0].clientY);
+    var q1 = clampXY(touches[1].clientX, touches[1].clientY);
+    return { x: (q0.x + q1.x) * 0.5, y: (q0.y + q1.y) * 0.5 };
+  }
+
+  /** Page under pinch/cursor (not every stacked page clamped toward the same point). */
+  function pageZoomOuterFromFocalClient(focal) {
+    if (!focal || typeof focal.x !== 'number' || typeof focal.y !== 'number') return null;
+    var stack = null;
+    try { stack = document.elementsFromPoint(focal.x, focal.y); } catch (ePt) {}
+    if (stack && stack.length) {
+      for (var si = 0; si < stack.length; si++) {
+        var el = stack[si];
+        if (el && typeof el.closest === 'function') {
+          var zo = el.closest('.page-zoom-outer');
+          if (zo) return zo;
+        }
+      }
+    }
+    try {
+      var hit = document.elementFromPoint(focal.x, focal.y);
+      if (hit && typeof hit.closest === 'function') return hit.closest('.page-zoom-outer');
+    } catch (e2) {}
+    return null;
+  }
+
+  /** Fallback when focal misses page pixels (gutter UI): closest point-in-rect snap. */
+  function nearestPageZoomOuterToFocal(focal, outerList) {
+    if (
+      !focal ||
+      typeof focal.x !== 'number' ||
+      typeof focal.y !== 'number' ||
+      !outerList ||
+      outerList.length === 0
+    )
+      return null;
+    var best = null;
+    var bestSq = Infinity;
+    for (var ni = 0; ni < outerList.length; ni++) {
+      var outer = outerList[ni];
+      var r = outer.getBoundingClientRect();
+      var px = Math.min(Math.max(focal.x, r.left), r.right);
+      var py = Math.min(Math.max(focal.y, r.top), r.bottom);
+      var dx = focal.x - px;
+      var dy = focal.y - py;
+      var dq = dx * dx + dy * dy;
+      if (dq < bestSq) {
+        bestSq = dq;
+        best = outer;
+      }
+    }
+    return best;
+  }
+
+
+  /*
+   * Touch / hybrid devices (Chrome DevTools mobile emulation often reports maxTouchPoints === 0).
+   */
+  function needsContentEditableTapFix() {
+    if ((navigator.maxTouchPoints || 0) > 0) return true;
+    return typeof window !== 'undefined' && 'ontouchstart' in window;
+  }
+
+  /*
+   * iOS Safari: focus() must run synchronously in the touch/pointer gesture — async (rAF, setTimeout)
+   * drops user activation and the keyboard often never opens.
+   */
+  function focusEditableNow(node, ev) {
+    if (!node) return;
+    if (document.activeElement === node) return;
+    var cx, cy;
+    if (ev && ev.changedTouches && ev.changedTouches.length) {
+      cx = ev.changedTouches[0].clientX;
+      cy = ev.changedTouches[0].clientY;
+    } else if (ev && ev.clientX != null && ev.clientY != null) {
+      cx = ev.clientX;
+      cy = ev.clientY;
+    }
+    if (ev) {
+      try { ev.preventDefault(); } catch (e1) {}
+    }
+    try {
+      node.focus({ preventScroll: true });
+    } catch (e2) {
+      try { node.focus(); } catch (e3) {}
+    }
+    /* preventDefault disables native caret-under-finger — restore via hit-testing */
+    try {
+      var range = null;
+      if (cx != null && cy != null && document.caretPositionFromPoint) {
+        var caret = document.caretPositionFromPoint(cx, cy);
+        if (caret && caret.offsetNode && node.contains(caret.offsetNode)) {
+          range = document.createRange();
+          range.setStart(
+            caret.offsetNode,
+            Math.min(Math.max(0, caret.offset), caret.offsetNode.nodeType === 3 ? caret.offsetNode.length : (caret.offsetNode.textContent || '').length)
+          );
+          range.collapse(true);
+        }
+      }
+      if (!range && cx != null && cy != null && document.caretRangeFromPoint) {
+        var rp = document.caretRangeFromPoint(cx, cy);
+        if (rp && rp.startContainer && node.contains(rp.startContainer))
+          range = rp;
+      }
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      if (range) sel.addRange(range);
+      else {
+        var rEnd = document.createRange();
+        rEnd.selectNodeContents(node);
+        rEnd.collapse(false);
+        sel.addRange(rEnd);
+      }
+    } catch (e4) {}
+  }
+
+  function activateEditableUnlock(el, ev) {
+    if (!el) return;
+    if (el.dataset.editActive === '1') {
+      focusEditableNow(el, ev);
+      return;
+    }
+    el.contentEditable = 'true';
+    el.tabIndex = 0;
+    el.dataset.editActive = '1';
+    focusEditableNow(el, ev);
+  }
+
+  function lockEditableOverlay(el) {
+    delete el.dataset.editActive;
+    el.contentEditable = 'false';
+    el.tabIndex = -1;
+  }
+
+  /* Inserted blank line: stay editable immediately; keep single-touch iOS focus helpers. */
+  function attachImmediateTouchFocus(node) {
+    if (!needsContentEditableTapFix()) return;
+    var sx, sy, moved;
+    var pid = null;
+    var pdownX = null;
+    var pdownY = null;
+    var ptrMoved = false;
+
+    node.addEventListener('touchstart', function(ev) {
+      if (!ev.touches || ev.touches.length !== 1) return;
+      sx = ev.touches[0].clientX;
+      sy = ev.touches[0].clientY;
+      moved = false;
+    }, { passive: true });
+    node.addEventListener('touchmove', function(ev) {
+      if (!ev.touches || ev.touches.length !== 1) return;
+      if (Math.abs(ev.touches[0].clientX - sx) > 14 || Math.abs(ev.touches[0].clientY - sy) > 14) moved = true;
+    }, { passive: true });
+    node.addEventListener('touchend', function(ev) {
+      if (!ev.changedTouches || !ev.changedTouches.length) return;
+      if (moved) return;
+      focusEditableNow(node, ev);
+    }, { passive: false });
+
+    if (typeof PointerEvent !== 'undefined') {
+      node.addEventListener('pointerdown', function(ev) {
+        if (ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+        pid = ev.pointerId;
+        pdownX = ev.clientX;
+        pdownY = ev.clientY;
+        ptrMoved = false;
+      }, { passive: true });
+      node.addEventListener('pointermove', function(ev) {
+        if (ev.pointerId !== pid || pdownX == null || pdownY == null) return;
+        if (Math.abs(ev.clientX - pdownX) > 14 || Math.abs(ev.clientY - pdownY) > 14) ptrMoved = true;
+      }, { passive: true });
+      node.addEventListener('pointerup', function(ev) {
+        if (ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+        if (ev.pointerId !== pid || pid === null) return;
+        if (ptrMoved) return;
+        focusEditableNow(node, ev);
+      }, { passive: false });
+      node.addEventListener('pointercancel', function(ev) {
+        if (ev.pointerId === pid) {
+          pid = null;
+          pdownX = pdownY = null;
+        }
+      }, { passive: true });
+    }
+  }
+
+  /* Ordinary overlays: unlock keyboard only on double-click / double-tap (single gesture = zoom/pan). */
+  function attachDoubleTapEditGestures(el, pageNum) {
+    var lastTap = { t: 0, x: 0, y: 0 };
+
+    function tapSecondHit(nx, ny, now) {
+      var dt = now - lastTap.t;
+      if (!(dt > 38 && dt < 480)) return false;
+      if (!lastTap.t) return false;
+      if (Math.abs(nx - lastTap.x) > 42 || Math.abs(ny - lastTap.y) > 42) return false;
+      return true;
+    }
+
+    el.addEventListener('dblclick', function(ev) {
+      try { ev.preventDefault(); ev.stopPropagation(); } catch (e01) {}
+      activateEditableUnlock(el, ev);
+    });
+
+    var sx = 0, sy = 0, moved = false;
+    el.addEventListener('touchstart', function(ev) {
+      if (!ev.touches || ev.touches.length !== 1) return;
+      sx = ev.touches[0].clientX;
+      sy = ev.touches[0].clientY;
+      moved = false;
+    }, { passive: true });
+    el.addEventListener('touchmove', function(ev) {
+      if (!ev.touches || ev.touches.length !== 1) return;
+      if (Math.abs(ev.touches[0].clientX - sx) > 12 || Math.abs(ev.touches[0].clientY - sy) > 12)
+        moved = true;
+    }, { passive: true });
+    el.addEventListener('touchend', function(ev) {
+      if (!ev.changedTouches || !ev.changedTouches.length) return;
+      var nx = ev.changedTouches[0].clientX;
+      var ny = ev.changedTouches[0].clientY;
+      var now = Date.now();
+      if (moved) {
+        lastTap = { t: 0, x: 0, y: 0 };
+        return;
+      }
+      if (tapSecondHit(nx, ny, now)) {
+        try { ev.preventDefault(); } catch (e02) {}
+        lastTap = { t: 0, x: 0, y: 0 };
+        activateEditableUnlock(el, ev);
+        return;
+      }
+      lastTap = { t: now, x: nx, y: ny };
+    }, { passive: false });
+
+    if (typeof PointerEvent !== 'undefined') {
+      var pid = null;
+      var pdx = null, pdy = null, ptrMoved = false;
+      var pxLast = { t: 0, x: 0, y: 0 };
+      el.addEventListener('pointerdown', function(ev) {
+        if (ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+        pid = ev.pointerId;
+        pdx = ev.clientX;
+        pdy = ev.clientY;
+        ptrMoved = false;
+      }, { passive: true });
+      el.addEventListener('pointermove', function(ev) {
+        if (ev.pointerId !== pid || pdx == null || pdy == null) return;
+        if (Math.abs(ev.clientX - pdx) > 12 || Math.abs(ev.clientY - pdy) > 12) ptrMoved = true;
+      }, { passive: true });
+      el.addEventListener('pointerup', function(ev) {
+        if (ev.pointerType !== 'touch' && ev.pointerType !== 'pen') return;
+        if (ev.pointerId !== pid || pid === null) return;
+        if (ptrMoved) {
+          pxLast = { t: 0, x: 0, y: 0 };
+          return;
+        }
+        var now = Date.now();
+        var dt = now - pxLast.t;
+        if (pxLast.t && dt > 38 && dt < 480 &&
+            Math.abs(ev.clientX - pxLast.x) < 42 && Math.abs(ev.clientY - pxLast.y) < 42) {
+          try { ev.preventDefault(); } catch (e03) {}
+          pxLast = { t: 0, x: 0, y: 0 };
+          activateEditableUnlock(el, ev);
+          return;
+        }
+        pxLast = { t: now, x: ev.clientX, y: ev.clientY };
+      }, { passive: false });
+      el.addEventListener('pointercancel', function(ev) {
+        if (ev.pointerId === pid) pid = null;
+      }, { passive: true });
+    }
+  }
+
+  (function bindZoomAndPinchUi() {
+    var zi = $('btn-zoom-in');
+    var zo = $('btn-zoom-out');
+    var zr = $('btn-zoom-reset');
+    var pa = $('pages-area');
+    if (zi) zi.addEventListener('click', function() { adjustViewerZoom(1.2); });
+    if (zo) zo.addEventListener('click', function() { adjustViewerZoom(1 / 1.2); });
+    if (zr) zr.addEventListener('click', resetViewerZoom);
+
+    if (pa) {
+      /* Capture pinch so overlays (.tx / canvas) cannot eat two-finger moves before pages-area sees them */
+      pa.addEventListener(
+        'touchstart',
+        function(ev) {
+          if (ev.touches.length !== 2) return;
+          pinchState.initialDist = pinchTouchDist(ev.touches);
+          pinchState.startZoom = viewerZoomFactor;
+          pinchState.pinchTargetOuter = resolvePrimaryOuterForPinch(
+            ev.touches,
+            document.querySelectorAll('.page-zoom-outer')
+          );
+          var pto = pinchState.pinchTargetOuter;
+          var f =
+            (pto && pinchScreenFocalClampedToOuter(ev.touches, pto)) ||
+            (function() {
+              var a = ev.touches[0];
+              var b = ev.touches[1];
+              return {
+                x: (a.clientX + b.clientX) * 0.5,
+                y: (a.clientY + b.clientY) * 0.5
+              };
+            })();
+          pinchState.midX = f.x;
+          pinchState.midY = f.y;
+          setPagesAreaZoomGesturing(true);
+        },
+        { passive: true, capture: true }
+      );
+      pa.addEventListener(
+        'touchmove',
+        function(ev) {
+          if (ev.touches.length !== 2 || pinchState.initialDist == null || pinchState.initialDist < 4) return;
+          var t0 = ev.touches[0];
+          var t1 = ev.touches[1];
+          var pto = pinchState.pinchTargetOuter;
+          var f =
+            (pto && pinchScreenFocalClampedToOuter(ev.touches, pto)) || {
+              x: (t0.clientX + t1.clientX) * 0.5,
+              y: (t0.clientY + t1.clientY) * 0.5
+            };
+          pinchState.midX = f.x;
+          pinchState.midY = f.y;
+          var d = pinchTouchDist(ev.touches);
+          viewerZoomFactor = (pinchState.startZoom || 1) * d / pinchState.initialDist;
+          syncViewerZoomToDom({
+            syncNow: true,
+            focal: { x: pinchState.midX, y: pinchState.midY },
+            pinchTargetOuter: pinchState.pinchTargetOuter
+          });
+          try {
+            ev.preventDefault();
+          } catch (e6) {}
+        },
+        { passive: false, capture: true }
+      );
+
+      function pinchEnd(ev) {
+        if (!ev.touches || ev.touches.length < 2) {
+          if (pinchState.initialDist != null) {
+            var focal =
+              pinchState.midX != null && pinchState.midY != null
+                ? { x: pinchState.midX, y: pinchState.midY }
+                : null;
+            var pto = pinchState.pinchTargetOuter;
+            pinchState.initialDist = null;
+            pinchState.startZoom = null;
+            pinchState.midX = null;
+            pinchState.midY = null;
+            pinchState.pinchTargetOuter = null;
+            setPagesAreaZoomGesturing(false);
+            if (viewerZoomSyncRafId) {
+              cancelAnimationFrame(viewerZoomSyncRafId);
+              viewerZoomSyncRafId = 0;
+            }
+            pendingZoomSync = null;
+            syncViewerZoomToDom({ immediate: true, focal: focal, pinchTargetOuter: pto });
+          }
+        }
+      }
+      pa.addEventListener('touchend', pinchEnd, { passive: true, capture: true });
+      pa.addEventListener('touchcancel', pinchEnd, { passive: true, capture: true });
+
+      /* Desktop / trackpad: pinch-zoom sends wheel events with ctrlKey (Chrome, Edge, Firefox). */
+      pa.addEventListener('wheel', function(ev) {
+        if (!ev.ctrlKey && !ev.metaKey) return;
+        try { ev.preventDefault(); } catch (ew) {}
+        var dy = ev.deltaY;
+        if (ev.deltaMode === 1) dy *= 16;
+        else if (ev.deltaMode === 2) dy *= 320;
+        viewerZoomFactor *= Math.exp(-dy * 0.0018);
+        scheduleViewerZoomSync({ focal: { x: ev.clientX, y: ev.clientY } });
+        bumpWheelZoomGesturing();
+      }, { passive: false });
+    }
+  })();
+
+  function revokePendingDlUrl() {
+    if (pendingDlRevokeTimer) {
+      clearTimeout(pendingDlRevokeTimer);
+      pendingDlRevokeTimer = null;
+    }
+    if (pendingDlUrl) {
+      try { URL.revokeObjectURL(pendingDlUrl); } catch (er) {}
+      pendingDlUrl = null;
+    }
+  }
+
+  function hideMobileDlBar() {
+    var row = $('mobile-dl-row');
+    var manualA = $('mobile-dl-link');
+    if (row) row.style.display = 'none';
+    if (manualA) {
+      manualA.removeAttribute('href');
+      manualA.removeAttribute('download');
+    }
+  }
 
   /* ---- Server archive (original before edit, edited after export) ---- */
   function archiveHeaders() {
@@ -643,7 +1318,6 @@
     var badge = $('edit-badge');
     badge.style.display = total > 0 ? 'inline-block' : 'none';
     badge.textContent   = total + ' edit' + (total !== 1 ? 's' : '');
-    $('btn-save-dl').style.display = total > 0 ? 'inline-flex' : 'none';
   }
 
   /* ---- Highlight mode: make all text areas visible ---- */
@@ -653,224 +1327,12 @@
     document.body.classList.toggle('highlight-mode', highlightOn);
     var btn = $('btn-highlight');
     if (highlightOn) {
-      btn.textContent = '✕ Hide Text Areas';
+      btn.textContent = '✕ Hide guides';
       btn.style.background = 'linear-gradient(135deg,#dc2626,#b91c1c)';
     } else {
-      btn.textContent = '🔍 Show Text Areas';
+      btn.textContent = '🔍 Text guides';
       btn.style.background = '';
     }
-  }
-
-  /* ---- Stamp / Signature overlay ---- */
-  function triggerStampUpload() {
-    if (!pdfJsDoc) { toast('Upload a PDF first.', 'info'); return; }
-    $('stamp-input').click();
-  }
-
-  $('stamp-input').addEventListener('change', function() {
-    var file = this.files && this.files[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) { toast('Please select an image file.', 'error'); return; }
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      /* Place on first visible page */
-      var visibleWrap = document.querySelector('.page-wrapper');
-      if (!visibleWrap) { toast('No page loaded yet.', 'error'); return; }
-      var pageNum = parseInt(visibleWrap.dataset.pageNum, 10) || 1;
-      addOverlay(pageNum, e.target.result);
-    };
-    reader.readAsDataURL(file);
-    this.value = '';
-  });
-
-  function addOverlay(pageNum, dataUrl) {
-    var wrap = document.querySelector('.page-wrapper[data-page-num="' + pageNum + '"]');
-    if (!wrap) return;
-
-    if (!overlays.has(pageNum)) overlays.set(pageNum, []);
-
-    /* Start at centre of page, 30% of page width */
-    var wrapW = wrap.offsetWidth  || 200;
-    var wrapH = wrap.offsetHeight || 200;
-    var imgW  = Math.round(wrapW * 0.3);
-    var imgX  = Math.round((wrapW - imgW) / 2);
-    var imgY  = Math.round(wrapH * 0.1);
-
-    var img    = new Image();
-    img.src    = dataUrl;
-    img.onload = function() {
-      var ratio  = img.naturalWidth / img.naturalHeight;
-      var imgH   = Math.round(imgW / ratio);
-      createOverlayEl(pageNum, wrap, dataUrl, imgX, imgY, imgW, imgH);
-    };
-    /* fallback if image loads instantly */
-    if (img.complete) {
-      var ratio = img.naturalWidth / img.naturalHeight;
-      var imgH  = Math.round(imgW / ratio);
-      createOverlayEl(pageNum, wrap, dataUrl, imgX, imgY, imgW, imgH);
-    }
-  }
-
-  function createOverlayEl(pageNum, wrap, dataUrl, x, y, w, h) {
-    var entry = { dataUrl: dataUrl, x: x, y: y, w: w, h: h, rotation: 0, el: null };
-    overlays.get(pageNum).push(entry);
-
-    var el = document.createElement('div');
-    el.className = 'img-overlay';
-    el.style.cssText = 'position:absolute;left:'+x+'px;top:'+y+'px;width:'+w+'px;height:'+h+'px;' +
-      'cursor:move;border:2px dashed rgba(99,102,241,0.7);border-radius:3px;box-sizing:border-box;z-index:30;touch-action:none;transform-origin:center center;';
-    entry.el = el;
-
-    var inner = document.createElement('img');
-    inner.src = dataUrl;
-    inner.style.cssText = 'width:100%;height:100%;display:block;pointer-events:none;user-select:none;';
-    el.appendChild(inner);
-
-    /* Delete button */
-    var del = document.createElement('button');
-    del.textContent = '×';
-    del.title = 'Remove';
-    del.style.cssText = 'position:absolute;top:-12px;right:-12px;width:24px;height:24px;border-radius:50%;' +
-      'background:#ef4444;color:#fff;border:none;font-size:15px;line-height:1;cursor:pointer;z-index:60;' +
-      'display:flex;align-items:center;justify-content:center;padding:0;touch-action:manipulation;';
-    del.addEventListener('click', function(e) {
-      e.stopPropagation();
-      el.parentNode && el.parentNode.removeChild(el);
-      var arr = overlays.get(pageNum);
-      if (arr) { var idx = arr.indexOf(entry); if (idx >= 0) arr.splice(idx, 1); }
-      updateBadge();
-    });
-    el.appendChild(del);
-
-    /* Rotation handle — circle above top-centre, connected by a thin line */
-    var rotLine = document.createElement('div');
-    rotLine.style.cssText = 'position:absolute;top:-32px;left:50%;transform:translateX(-50%);' +
-      'width:2px;height:28px;background:rgba(99,102,241,0.6);pointer-events:none;';
-    el.appendChild(rotLine);
-
-    var rotHandle = document.createElement('div');
-    rotHandle.dataset.rotate = '1';
-    rotHandle.title = 'Rotate';
-    rotHandle.style.cssText = 'position:absolute;top:-46px;left:50%;transform:translateX(-50%);' +
-      'width:20px;height:20px;border-radius:50%;background:#a78bfa;border:2px solid #fff;' +
-      'cursor:grab;z-index:55;touch-action:none;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;';
-    rotHandle.textContent = '↻';
-    el.appendChild(rotHandle);
-
-    /* Resize handles — 4 corners */
-    ['nw','ne','se','sw'].forEach(function(dir) {
-      var rh = document.createElement('div');
-      rh.dataset.resize = dir;
-      var css = 'position:absolute;width:14px;height:14px;border-radius:3px;' +
-        'background:#6366f1;border:2px solid #fff;box-sizing:border-box;z-index:50;touch-action:none;';
-      if (dir === 'nw') css += 'top:-7px;left:-7px;cursor:nw-resize;';
-      if (dir === 'ne') css += 'top:-7px;right:-7px;cursor:ne-resize;';
-      if (dir === 'se') css += 'bottom:-7px;right:-7px;cursor:se-resize;';
-      if (dir === 'sw') css += 'bottom:-7px;left:-7px;cursor:sw-resize;';
-      rh.style.cssText = css;
-      el.appendChild(rh);
-    });
-
-    makeDraggableResizable(el, wrap, entry);
-    wrap.appendChild(el);
-    updateBadge();
-  }
-
-  function makeDraggableResizable(el, wrap, entry) {
-    var startX, startY, startL, startT, startW, startH, startAngle;
-    var resizeDir = null, rotating = false, dragging = false;
-
-    function getXY(e) {
-      if (e.touches && e.touches.length) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      return { x: e.clientX, y: e.clientY };
-    }
-
-    /* Centre of the element in page coordinates */
-    function elCenter() {
-      var cx = (entry.x || 0) + (entry.w || 0) / 2;
-      var cy = (entry.y || 0) + (entry.h || 0) / 2;
-      var wrapRect = wrap.getBoundingClientRect();
-      return { cx: wrapRect.left + cx, cy: wrapRect.top + cy };
-    }
-
-    function applyRotation(deg) {
-      entry.rotation = deg;
-      el.style.transform = 'rotate(' + deg + 'deg)';
-    }
-
-    function onDown(e) {
-      var target = e.target;
-      if (target.dataset && target.dataset.rotate) {
-        /* start rotation */
-        rotating = true; dragging = false; resizeDir = null;
-        var c   = elCenter();
-        var p   = getXY(e);
-        startAngle = Math.atan2(p.y - c.cy, p.x - c.cx) * 180 / Math.PI - (entry.rotation || 0);
-        e.preventDefault(); e.stopPropagation();
-      } else if (target === el || target.tagName === 'IMG') {
-        dragging = true; rotating = false; resizeDir = null;
-      } else if (target.dataset && target.dataset.resize) {
-        resizeDir = target.dataset.resize; dragging = false; rotating = false;
-      } else { return; }
-
-      if (!rotating) {
-        e.preventDefault(); e.stopPropagation();
-        var p = getXY(e);
-        startX = p.x; startY = p.y;
-        startL = parseInt(el.style.left,  10) || 0;
-        startT = parseInt(el.style.top,   10) || 0;
-        startW = parseInt(el.style.width, 10) || entry.w;
-        startH = parseInt(el.style.height,10) || entry.h;
-      }
-
-      window.addEventListener('mousemove', onMove);
-      window.addEventListener('mouseup',   onUp);
-      window.addEventListener('touchmove', onMove, { passive: false });
-      window.addEventListener('touchend',  onUp);
-    }
-
-    function onMove(e) {
-      if (!dragging && !rotating && !resizeDir) return;
-      e.preventDefault();
-      var p  = getXY(e);
-
-      if (rotating) {
-        var c   = elCenter();
-        var ang = Math.atan2(p.y - c.cy, p.x - c.cx) * 180 / Math.PI - startAngle;
-        applyRotation(ang);
-        return;
-      }
-
-      var dx  = p.x - startX;
-      var dy  = p.y - startY;
-      var MIN = 30;
-      if (!resizeDir) {
-        var nx = Math.max(0, Math.min(startL + dx, wrap.offsetWidth  - startW));
-        var ny = Math.max(0, Math.min(startT + dy, wrap.offsetHeight - startH));
-        el.style.left = nx + 'px'; el.style.top = ny + 'px';
-        entry.x = nx; entry.y = ny;
-      } else {
-        var nw = startW, nh = startH, nl = startL, nt = startT;
-        if (resizeDir.indexOf('e') >= 0) nw = Math.max(MIN, startW + dx);
-        if (resizeDir.indexOf('s') >= 0) nh = Math.max(MIN, startH + dy);
-        if (resizeDir.indexOf('w') >= 0) { nw = Math.max(MIN, startW - dx); nl = startL + (startW - nw); }
-        if (resizeDir.indexOf('n') >= 0) { nh = Math.max(MIN, startH - dy); nt = startT + (startH - nh); }
-        el.style.width  = nw + 'px'; el.style.height = nh + 'px';
-        el.style.left   = nl + 'px'; el.style.top    = nt + 'px';
-        entry.w = nw; entry.h = nh; entry.x = nl; entry.y = nt;
-      }
-    }
-
-    function onUp() {
-      dragging = false; rotating = false; resizeDir = null;
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup',   onUp);
-      window.removeEventListener('touchmove', onMove);
-      window.removeEventListener('touchend',  onUp);
-    }
-
-    el.addEventListener('mousedown',  onDown);
-    el.addEventListener('touchstart', onDown, { passive: false });
   }
 
   /* ---- Upload ---- */
@@ -930,6 +1392,8 @@
   /* ---- Load PDF ---- */
   function loadFile(file) {
     showLoading('Loading PDF...');
+    revokePendingDlUrl();
+    hideMobileDlBar();
     file.arrayBuffer().then(function(buf) {
       originalBytes = new Uint8Array(buf.slice(0));
       savedBytes    = null;
@@ -943,8 +1407,27 @@
       pagePreviewScale = new Map();
       insertedLines = new Map();
 
+      viewerZoomFactor = 1;
+      pendingZoomSync = null;
+      lastSyncedViewerZoom = 1;
+      pinchState.initialDist = null;
+      pinchState.startZoom = null;
+      pinchState.midX = null;
+      pinchState.midY = null;
+      pinchState.pinchTargetOuter = null;
+      if (viewerZoomSyncRafId) {
+        cancelAnimationFrame(viewerZoomSyncRafId);
+        viewerZoomSyncRafId = 0;
+      }
+      if (wheelZoomGesturingTimer) {
+        clearTimeout(wheelZoomGesturingTimer);
+        wheelZoomGesturingTimer = null;
+      }
+      setPagesAreaZoomGesturing(false);
+
       $('file-name').value          = file.name;
-      $('btn-save-dl').disabled     = false;
+      $('btn-download').disabled     = false;
+      $('btn-download').style.removeProperty('display');
       $('edit-badge').style.display = 'none';
 
       return pdfjsLib.getDocument({ data: new Uint8Array(buf.slice(0)) }).promise;
@@ -956,16 +1439,13 @@
     }).then(function() {
       hideLoading();
       var txCount = document.querySelectorAll('.tx, .ann-field').length;
-      var isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
       var sn = $('scan-notice');
       if (txCount === 0) {
         if (sn) sn.style.display = 'block';
-        toast('No PDF text found (often scans or handwriting as an image). Use Stamp/Sign, or re-type. See the yellow note below.', 'info');
+        toast('No PDF text found (often scans or handwriting as an image). Re-type or try a different file. See the note below.', 'info');
       } else {
         if (sn) sn.style.display = 'none';
-        toast('Loaded ' + pdfJsDoc.numPages + ' page(s) — ' + txCount + ' text area' + (txCount !== 1 ? 's' : '') + ' found. Tap any to edit.', 'success');
-        /* On touch screens auto-enable highlight so tiny text areas are visible */
-        if (isTouchDevice && !highlightOn) toggleHighlight();
+        toast('Loaded ' + pdfJsDoc.numPages + ' page(s) — ' + txCount + ' text area' + (txCount !== 1 ? 's' : '') + ' found. Zoom freely; double-click or double-tap text to edit.', 'success');
       }
       archiveOriginalPdf(file);
     }).catch(function(err) {
@@ -1052,7 +1532,11 @@
 
               var el = document.createElement('div');
               el.className       = 'tx';
-              el.contentEditable = 'true';
+              el.contentEditable = 'false';
+              el.tabIndex        = -1;
+              el.dataset.editActive = '';
+              el.setAttribute('role', 'textbox');
+              el.setAttribute('inputmode', 'text');
               el.textContent     = item.str;
               el.dataset.pi      = String(pageNum - 1);
               el.dataset.ii      = String(idx);
@@ -1118,6 +1602,7 @@
                   el.style.minWidth = '';
                   redrawPageCanvasOnly(pageNum);
                 }
+                lockEditableOverlay(el);
               });
 
               el.addEventListener('keydown', function(e) {
@@ -1129,6 +1614,8 @@
                   redrawPageCanvasOnly(pageNum);
                 }
               });
+
+              attachDoubleTapEditGestures(el, pageNum);
 
               layer.appendChild(el);
             });
@@ -1153,7 +1640,11 @@
 
               var aEl = document.createElement('div');
               aEl.className       = 'ann-field';
-              aEl.contentEditable = 'true';
+              aEl.contentEditable = 'false';
+              aEl.tabIndex        = -1;
+              aEl.dataset.editActive = '';
+              aEl.setAttribute('role', 'textbox');
+              aEl.setAttribute('inputmode', 'text');
               aEl.textContent     = ann.fieldValue || '';
               aEl.style.left      = vx + 'px';
               aEl.style.top       = vy + 'px';
@@ -1177,7 +1668,10 @@
                 aEl.classList.add('modified');
                 updateBadge();
               });
-              aEl.addEventListener('touchstart', function() {}, { passive: true });
+              aEl.addEventListener('blur', function() {
+                lockEditableOverlay(aEl);
+              });
+              attachDoubleTapEditGestures(aEl, pageNum);
 
               layer.appendChild(aEl);
             });
@@ -1189,15 +1683,37 @@
 
             wrap.appendChild(canvas);
             wrap.appendChild(layer);
+
+            var zoomOuter = document.createElement('div');
+            zoomOuter.className = 'page-zoom-outer';
+            zoomOuter.dataset.baseW = String(viewport.width);
+            zoomOuter.dataset.baseH = String(viewport.height);
+
+            var zoomInner = document.createElement('div');
+            zoomInner.className = 'page-zoom-inner';
+            zoomInner.style.width  = viewport.width + 'px';
+            zoomInner.style.height = viewport.height + 'px';
+            zoomInner.style.transformOrigin = '0px 0px';
+            zoomInner.style.transform = 'translateZ(0) scale(' + viewerZoomFactor + ')';
+
+            zoomOuter.style.width  = (viewport.width * viewerZoomFactor) + 'px';
+            zoomOuter.style.height = (viewport.height * viewerZoomFactor) + 'px';
+
+            zoomInner.appendChild(wrap);
+            zoomOuter.appendChild(zoomInner);
+
             var scroll = document.createElement('div');
             scroll.className = 'page-scroll';
-            scroll.appendChild(wrap);
+            scroll.appendChild(zoomOuter);
             area.appendChild(scroll);
           });
         });
       })(pn);
     }
-    return chain;
+    return chain.then(function() {
+      syncViewerZoomToDom();
+      return Promise.resolve();
+    });
   }
 
   /* Redraw one page raster from PDF (after Esc revert), then re-erase spots for edits still applied */
@@ -1335,19 +1851,21 @@
 
   function flushActiveEdit() {
     var active = document.activeElement;
-    if (active && active.classList.contains('tx')) { active.blur(); }
+    if (!active) return;
+    if (active.classList.contains('tx') || active.classList.contains('ann-field')) active.blur();
+    else if (active.isContentEditable) active.blur();
   }
 
   /*
    * Before export: commit every .tx element whose live textContent differs
    * from what is already stored in the edits Map (or from the original text).
    * This means the user does NOT need to press Enter or click away — just
-   * clicking Save & Download is enough.
+   * clicking Download is enough.
    */
   /*
    * Press Enter in any text field → commit the current line then insert a new
    * blank editable line below it, pushing all existing lines down by lineH.
-   * Press Enter again to chain another new line. Click elsewhere or Save to finish.
+   * Press Enter again to chain another new line. Tap elsewhere or Download to finish.
    */
   function insertLineAfter(el) {
     /* Commit current content (blur fires the blur handler → commitEdit) */
@@ -1382,6 +1900,10 @@
     var newEl = document.createElement('div');
     newEl.className       = 'tx tx-inserted';
     newEl.contentEditable = 'true';
+    newEl.tabIndex        = 0;
+    newEl.dataset.editActive = '1';
+    newEl.setAttribute('role', 'textbox');
+    newEl.setAttribute('inputmode', 'text');
     newEl.textContent     = '';
     newEl.dataset.pi          = String(pi);
     newEl.dataset.ii          = String(-insertKey);
@@ -1420,6 +1942,7 @@
       if (e.key === 'Enter')  { e.preventDefault(); insertLineAfter(newEl); }
       if (e.key === 'Escape') { e.preventDefault(); newEl.textContent = ''; newEl.blur(); }
     });
+    attachImmediateTouchFocus(newEl);
 
     var layer = el.closest('.text-layer');
     if (layer) layer.appendChild(newEl);
@@ -1440,10 +1963,11 @@
   }
 
   function flushAllEdits() {
-    /* First, blur the currently-focused element (fires its blur handler). */
+    /* First, blur the currently-focused editable (fires blur handlers so edits commit). */
     var active = document.activeElement;
-    if (active && active.classList.contains('tx')) {
-      active.blur();
+    if (active) {
+      if (active.classList.contains('tx') || active.classList.contains('ann-field')) active.blur();
+      else if (active.isContentEditable) active.blur();
     }
     /* Then scan every editable span and commit any unsaved live changes. */
     var txEls = document.querySelectorAll('.tx');
@@ -1801,9 +2325,14 @@
     }
   }
 
-  /* ---- Save & Download (canvas-based export) ---- */
+  /* ---- Export / Download (canvas-based) ---- */
   function saveAndDownload() {
     flushAllEdits();
+    var preExportDelay =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches
+        ? 200
+        : 80;
     setTimeout(function() {
       var total = 0;
       edits.forEach(function(m) { total += m.size; });
@@ -1951,33 +2480,100 @@
         insertedLines = new Map();
         /* Remove overlay elements from DOM */
         document.querySelectorAll('.img-overlay').forEach(function(el) { el.parentNode && el.parentNode.removeChild(el); });
-        toast('Saved! Downloading...', 'success');
-        archiveEditedPdf().finally(function() {
-          setTimeout(downloadPdf, 300);
-        });
+        updateBadge();
+        downloadPdf();
+        archiveEditedPdf().catch(function() {});
       }).catch(function(err) {
         hideLoading();
         console.error('saveAndDownload error:', err);
         toast('Error: ' + (err.message || String(err)), 'error');
       });
-    }, 80);
+    }, preExportDelay);
   }
 
-  /* ---- Download ---- */
+  /*
+   * Mobile Safari / Chrome often block programmatic <a download> clicks when they happen
+   * after long async PDF export ("user activation" expires). Prefer Web Share API with File,
+   * then blob: URL + manual tap target + optional new tab open.
+   */
   function downloadPdf() {
     if (!originalBytes) { toast('No PDF loaded.', 'error'); return; }
     var bytes = savedBytes || originalBytes;
     var name  = ($('file-name').value || 'document').trim();
     if (!name.toLowerCase().endsWith('.pdf')) name += '.pdf';
+
+    revokePendingDlUrl();
+    hideMobileDlBar();
+
     var blob = new Blob([bytes], { type: 'application/pdf' });
-    var url  = URL.createObjectURL(blob);
-    var a    = document.createElement('a');
-    a.href     = url;
+    var ua   = navigator.userAgent || '';
+    var isIOS =
+      /iP(ad|hone|od)/i.test(ua) ||
+      (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
+    var coarse =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+    try {
+      if (navigator.share && typeof File !== 'undefined') {
+        var pdfFile = new File([blob], name, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          navigator.share({ files: [pdfFile], title: name }).then(function() {
+            toast('Saved — choose “Save to Files” or Drive in your share sheet.', 'success');
+          }).catch(function(err) {
+            if (!err || err.name === 'AbortError') return;
+            openOrAttachMobilePdfDownload(blob, name, isIOS, coarse);
+          });
+          return;
+        }
+      }
+    } catch (e1) {}
+
+    openOrAttachMobilePdfDownload(blob, name, isIOS, coarse);
+  }
+
+  function openOrAttachMobilePdfDownload(blob, name, isIOS, coarse) {
+    var needManual = coarse || isIOS;
+    var url = URL.createObjectURL(blob);
+    pendingDlUrl = url;
+
+    clearTimeout(pendingDlRevokeTimer);
+    pendingDlRevokeTimer = setTimeout(function() {
+      revokePendingDlUrl();
+      hideMobileDlBar();
+    }, needManual ? 4 * 60 * 1000 : 90000);
+
+    var row = $('mobile-dl-row');
+    var manualA = $('mobile-dl-link');
+    if (needManual && row && manualA) {
+      manualA.href = url;
+      manualA.download = name;
+      manualA.setAttribute('download', name);
+      row.style.display = 'flex';
+    }
+
+    /* Try native download / open (may succeed on Chrome Android; noop on Safari) */
+    var a = document.createElement('a');
+    a.href = url;
     a.download = name;
+    if (needManual) a.target = '_blank';
+    a.rel = 'noopener';
+    a.style.cssText = 'position:absolute;left:-9999px;top:0;opacity:0;width:1px;height:1px;';
     document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+    } catch (e3) {
+      try { a.click(); } catch (e4) {}
+    }
+    setTimeout(function() {
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 200);
+
+    if (needManual) {
+      toast('Tap Open edited PDF below, then Share → Save to Files (iOS) or Download (Android).', 'success');
+      return;
+    }
+
     toast('Download started!', 'success');
   }
 
@@ -1999,5 +2595,6 @@
   function isItalic(name) { return /italic|oblique/i.test(name); }
 </script>
 <footer style="background:linear-gradient(120deg,#0f0c29,#302b63);color:rgba(255,255,255,.75);text-align:center;padding:20px 16px;font-size:.85rem;margin-top:40px"><p style="margin:0 0 6px">Built with ❤️ by <a href="https://pravoo.in/" target="_blank" rel="noopener" style="color:#ffd166;font-weight:700;text-decoration:none">Pravoo</a> — Web &amp; App Development, Game Dev, IT Solutions (Chennai, India)</p><p style="margin:0;opacity:.6">&copy; 2026 <a href="https://pdfforge.store/" style="color:rgba(255,255,255,.8);text-decoration:none">PDF Forge</a> — Free PDF tools. No signup. No limits.</p></footer>
+<script src="/install-banner.js" defer></script>
 </body>
 </html>

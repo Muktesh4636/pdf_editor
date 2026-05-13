@@ -1,15 +1,16 @@
 {
-  "name": "Jack pdf Editor",
-  "short_name": "pdf Editor",
-  "description": "Free PDF edit tool — edit PDF text online, no install needed",
+  "name": "PDF Forge",
+  "short_name": "PDF Forge",
+  "description": "PDF Forge — free PDF tools in your browser: edit, merge, compress, convert, bank filters, and more.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#6366f1",
+  "background_color": "#f7f8fc",
+  "theme_color": "#e84040",
   "icons": [
-    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ],
   "categories": ["utilities", "productivity"],
-  "lang": "en"
+  "lang": "en",
+  "id": "/"
 }

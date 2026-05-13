@@ -1,35 +1,75 @@
 #!/usr/bin/env bash
 #
-# PDF Forge — static site deployment (rsync over SSH).
+# PDF Forge — deploy static site to your VPS (rsync over SSH).
 #
-# Usage:
-#   ./deployment.sh
-#   ./deployment.sh --dry-run
-#   ./deployment.sh --help
+# Host default: root@72.61.148.117 → /var/www/pdf.pravoo.in/
+# (pdfforge.store and pdf.pravoo.in nginx both use root /var/www/pdf.pravoo.in —
+# syncing to pdfforge.store/ would leave the live site stale.)
 #
-# Environment (optional):
-#   DEPLOY_HOST     default: root@72.61.148.117
-#   DEPLOY_REMOTE   default: /var/www/pdfforge.store/
-#   RSYNC_RSH       default: ssh -o StrictHostKeyChecking=accept-new
-#                   example: RSYNC_RSH='ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new'
+# SECURITY — read this:
+# • Never commit secrets. Optional local file .env.deploy is gitignored.
+# • Prefer SSH keys: ssh-copy-id -i ~/.ssh/id_ed25519.pub root@72.61.148.117
+# • If you pasted a password in chat anywhere, rotate it on the server.
 #
-# One-time on your laptop:
-#   ssh-copy-id -i ~/.ssh/id_ed25519.pub "${DEPLOY_HOST:-root@72.61.148.117}"
-
+# Password-based deploy (not recommended): install sshpass, put ONLY in .env.deploy:
+#   export SSHPASS='your-password-here'
+# Then run ./deploy.sh  (Uses: sshpass -e ssh ...)
+#
 set -euo pipefail
 
-DEPLOY_HOST="${DEPLOY_HOST:-root@72.61.148.117}"
-DEPLOY_REMOTE="${DEPLOY_REMOTE:-/var/www/pdfforge.store/}"
-RSYNC_RSH="${RSYNC_RSH:-ssh -o StrictHostKeyChecking=accept-new}"
+DIR="$(cd "$(dirname "$0")" && pwd)"
+if [[ -f "${DIR}/.env.deploy" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "${DIR}/.env.deploy"
+  set +a
+fi
 
-usage() {
-  sed -n '2,17p' "$0" | sed 's/^# \{0,1\}//'
-  exit 0
+DEPLOY_HOST="${DEPLOY_HOST:-root@72.61.148.117}"
+DEPLOY_REMOTE="${DEPLOY_REMOTE:-/var/www/pdf.pravoo.in/}"
+
+# RSYNC_RSH: ssh for rsync. Set RSYNC_RSH in .env.deploy to force (e.g. custom -i key).
+if [[ -n "${RSYNC_RSH:-}" ]]; then
+  :
+elif [[ -n "${SSHPASS:-}" ]] && command -v sshpass >/dev/null 2>&1; then
+  RSYNC_RSH="sshpass -e ssh -o StrictHostKeyChecking=accept-new -o PreferredAuthentications=password -o PubkeyAuthentication=no"
+elif [[ -n "${SSHPASS:-}" ]] && ! command -v sshpass >/dev/null 2>&1; then
+  echo "SSHPASS is set but sshpass is not installed. Install: brew install sshpass / apt install sshpass" >&2
+  echo "Or remove SSHPASS from .env.deploy and use ssh-copy-id instead." >&2
+  exit 1
+else
+  RSYNC_RSH="ssh -o StrictHostKeyChecking=accept-new"
+fi
+
+print_help() {
+  cat <<'EOF'
+PDF Forge — static deployment (rsync → SSH)
+
+Default remote: root@72.61.148.117:/var/www/pdf.pravoo.in/
+
+Usage:
+  ./deploy.sh                    # rsync files
+  ./deploy.sh --dry-run | -n     # list what would be sent
+  ./deploy.sh -h | --help
+
+Optional file (ignored by git):  pdf-editor/.env.deploy
+  export DEPLOY_REMOTE=/var/www/pdf.pravoo.in/
+  # Optional — only if you refuse SSH keys:
+  export SSHPASS='your-ssh-password'
+  # Optional — custom key:
+  # export RSYNC_RSH='ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=accept-new'
+
+Prefer passwordless login:
+  ssh-copy-id -i ~/.ssh/id_ed25519.pub root@72.61.148.117
+
+Rotate any password that may have leaked (chat, screenshots, repos).
+EOF
 }
 
-[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && usage
+case "${1:-}" in
+  -h|--help) print_help; exit 0 ;;
+esac
 
-DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST="${DEPLOY_HOST}:$(echo "${DEPLOY_REMOTE}" | sed 's:/*$::')/"
 
 FILES=(
@@ -58,26 +98,40 @@ FILES=(
   icon-32.png
   icon-192.png
   icon-512.png
+  install-banner.js
+  sw.js
 )
 
+DRY_RUN=0
+if [[ "${1:-}" == "--dry-run" || "${1:-}" == "-n" ]]; then
+  DRY_RUN=1
+fi
+
 RSYNC_BASE=(rsync -avz --progress -e "$RSYNC_RSH")
-if [[ "${1:-}" == "--dry-run" ]]; then
+if [[ "$DRY_RUN" == 1 ]]; then
   RSYNC_BASE+=(--dry-run)
-  echo "Dry run — no files will be written on the server."
+  echo "Dry run — nothing will be written on the remote."
 fi
 
 PATHS=()
+MISSING=0
 for f in "${FILES[@]}"; do
   if [[ ! -f "${DIR}/${f}" ]]; then
     echo "Missing file (abort): ${DIR}/${f}" >&2
-    exit 1
+    MISSING=1
+  else
+    PATHS+=("${DIR}/${f}")
   fi
-  PATHS+=("${DIR}/${f}")
 done
+[[ "$MISSING" == 1 ]] && exit 1
 
 echo "→ ${DEST}"
-echo "   ${#FILES[@]} files · override with DEPLOY_HOST / DEPLOY_REMOTE"
+echo "   ${#FILES[@]} files"
 
 "${RSYNC_BASE[@]}" "${PATHS[@]}" "${DEST}"
 
-echo "✅ Deploy complete → ${DEST}"
+if [[ "$DRY_RUN" == 0 ]]; then
+  echo "✅ Deploy complete → ${DEST}"
+else
+  echo "✅ Dry run finished (no files changed)."
+fi
