@@ -1,4 +1,5 @@
 .DS_Store
+.env.deploy
 *.log
 data/
 server/node_modules/
