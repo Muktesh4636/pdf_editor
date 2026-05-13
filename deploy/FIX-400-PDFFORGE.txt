@@ -1,6 +1,14 @@
 Fix "Bad Request (400)" for https://pdfforge.store/
 ===============================================
 
+Fast path (on the VPS, after git pull or scp this file):
+  sudo bash deploy/setup-pdfforge-on-vps.sh your-email@example.com
+
+That script: HTTP-only vhost -> certbot webroot -> HTTPS vhost + reload.
+Then from your laptop:  ./deploy.sh
+
+---
+
 What is wrong (verified from outside):
   - pdfforge.store points to the same IP as pimux.store.
   - HTTPS still serves a certificate for pimux.store only (wrong name).
