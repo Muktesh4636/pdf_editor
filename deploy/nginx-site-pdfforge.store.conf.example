@@ -1,0 +1,12 @@
+# Example: static site for https://pdfforge.store
+# Copy ideas into /etc/nginx/sites-available/pdfforge.store (adjust paths & SSL).
+#
+#   server_name pdfforge.store www.pdfforge.store;
+#   root /var/www/pdfforge.store;
+#   index index.html;
+#
+#   location / {
+#     try_files $uri $uri/ =404;
+#   }
+#
+# Include API proxy (see nginx-api-proxy.conf.example) inside the same server { } if you use /api/.

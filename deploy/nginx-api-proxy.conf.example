@@ -1,4 +1,4 @@
-# Add inside the server { } block for pdf.pravoo.in (before the static location /)
+# Add inside the server { } block for pdfforge.store (before the static location /)
 # After:    proxy_set_header X-Real-IP $remote_addr;
 #           client_max_body_size 50m;   (or 80m to match the API)
 

@@ -4,7 +4,7 @@
 # Requires: passwordless SSH to the host, or run: ssh-add
 set -euo pipefail
 HOST="${DEPLOY_HOST:-root@72.61.148.117}"
-REMOTE="${DEPLOY_REMOTE:-/var/www/pdf.pravoo.in}"
+REMOTE="${DEPLOY_REMOTE:-/var/www/pdfforge.store}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 echo "→ $HOST:$REMOTE"
 rsync -avz "$ROOT/index.html" "$HOST:$REMOTE/"
@@ -15,4 +15,4 @@ rsync -avz \
   "$HOST:$REMOTE/server/"
 ssh "$HOST" "cd $REMOTE/server && npm install --omit=dev && systemctl restart pdf-archive"
 ssh "$HOST" "curl -sS http://127.0.0.1:3847/api/health; echo"
-echo "OK. Public: curl -sS https://pdf.pravoo.in/api/health"
+echo "OK. Public: curl -sS https://pdfforge.store/api/health"

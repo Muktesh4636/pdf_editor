@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# deploy.sh — push all pdf.pravoo.in files to the VPS
+# deploy.sh — push all pdfforge.store files to the VPS
 # Usage: ./deploy.sh
 # First time: run  ssh-copy-id root@72.61.148.117  to authorise your key
 
 set -e
 SERVER="root@72.61.148.117"
-REMOTE="/var/www/pdf.pravoo.in/"
+REMOTE="/var/www/pdfforge.store/"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 rsync -avz --progress \
@@ -27,6 +27,9 @@ rsync -avz --progress \
   "$DIR/pdf-to-excel.html" \
   "$DIR/pdf-to-pptx.html" \
   "$DIR/pdf-to-epub.html" \
+  "$DIR/sitemap.xml" \
+  "$DIR/robots.txt" \
+  "$DIR/manifest.json" \
   "$SERVER:$REMOTE"
 
 echo "✅ Deploy complete"

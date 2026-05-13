@@ -4,7 +4,7 @@
 <meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>Filter bank statement by name or phone — PDF | PDF Forge</title>
 <meta name="description" content="Upload one or more bank statement PDFs, enter names (partial match) and optional phone numbers, and see only matching transactions. Multiple people. Runs in your browser."/>
-<link rel="canonical" href="https://pdf.pravoo.in/bank-transactions.html"/>
+<link rel="canonical" href="https://pdfforge.store/bank-transactions.html"/>
 <link rel="icon" href="/favicon.ico"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -117,6 +117,30 @@ h1{font-size:1.9rem;font-weight:900;margin-bottom:6px}
 .out-actions button{flex:1;min-width:140px;border:none;border-radius:8px;padding:10px 16px;font-weight:700;cursor:pointer;font-size:.9rem}
 .btn-txt{background:#1e293b;color:#fff}.btn-txt:hover{background:#334155}
 .btn-pdf{background:var(--ok);color:#fff}.btn-pdf:hover{background:#047857}
+.history-section{margin-top:28px;display:none}
+.history-section.visible{display:block}
+.history-section-title{font-size:1rem;font-weight:800;margin-bottom:6px;color:var(--text)}
+.history-privacy{font-weight:600;color:var(--muted);font-size:.82rem}
+.history-privacy-note{font-size:.8rem;color:var(--muted);margin-bottom:14px;line-height:1.45}
+.history-list{display:flex;flex-direction:column;gap:16px}
+.history-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.history-card-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:10px;padding:12px 14px;border-bottom:1px solid var(--border);background:#fafbfc}
+.history-meta{flex:1;min-width:0;font-size:.82rem;line-height:1.45}
+.history-time{font-weight:800;color:var(--text);display:block;margin-bottom:4px}
+.history-who{color:var(--text)}
+.history-files{color:var(--muted);display:block;margin-top:4px;word-break:break-word}
+.history-actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn-history-apply{background:#0f766e;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:700;font-size:.82rem;cursor:pointer}
+.btn-history-apply:hover{background:#115e59}
+.btn-history-remove{background:#f1f5f9;color:#475569;border:1px solid var(--border);border-radius:8px;padding:8px 12px;font-weight:700;font-size:.82rem;cursor:pointer}
+.btn-history-remove:hover{background:#e2e8f0}
+.history-card-body{background:#0f172a;color:#e2e8f0;padding:12px 14px 14px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:.78rem;line-height:1.45}
+.history-card-body .summary-strip{margin-bottom:12px}
+.history-card-body .summary-pill .val{font-size:.95rem}
+.history-card-body .tx-block{margin-top:10px}
+.history-card-body .tx-block h3{margin-bottom:6px}
+.history-card-body .tx-line{font-size:.76rem;padding:5px 7px;margin:3px 0}
+.history-more{color:#94a3b8;font-size:.72rem;margin-top:6px;padding-left:4px}
 #status{margin-top:14px;padding:12px 16px;border-radius:8px;font-size:.9rem;display:none}
 .status-ok{background:var(--ok-bg);color:#047857}
 .status-err{background:#fee2e2;color:#991b1b}
@@ -187,6 +211,12 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
 
   <div id="status"></div>
 
+  <section class="history-section" id="history-section" aria-label="Recent search history on this device">
+    <h2 class="history-section-title">Recent searches <span class="history-privacy">(this device only)</span></h2>
+    <p class="history-privacy-note">Each time you tap <strong>Find</strong>, we save a snapshot here so you can compare past runs. Nothing is uploaded; data stays in your browser’s storage.</p>
+    <div id="history-list" class="history-list"></div>
+  </section>
+
   <div class="result-wrap" id="result-wrap">
     <div class="result-head">
       <span class="result-count" id="result-count">0 matches</span>
@@ -221,6 +251,9 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   var usedPdfPasswordForOpen = false;
   var pickPdfsAppendMode = false;
   var pipelineInFlight = false;
+  var HISTORY_KEY = 'pdfForgeBankSearchHistoryV1';
+  var HISTORY_MAX = 12;
+  var HISTORY_PREVIEW_LINES = 14;
   var $ = function(id) { return document.getElementById(id); };
 
   function showStatus(msg, ok) {
@@ -869,6 +902,178 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     return '<div class="tx-line ' + cls + '">' + amt + pg + safe + '</div>';
   }
 
+  function truncateStr(s, maxLen) {
+    s = String(s || '');
+    if (s.length <= maxLen) return s;
+    return s.slice(0, Math.max(0, maxLen - 1)) + '…';
+  }
+
+  function readHistory() {
+    try {
+      var raw = localStorage.getItem(HISTORY_KEY);
+      if (!raw) return [];
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function writeHistory(arr) {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(arr.slice(0, HISTORY_MAX)));
+    } catch (e) { /* quota or private mode */ }
+  }
+
+  function snapshotRowsForHistory(rows, type, maxN) {
+    var out = [];
+    var cap = Math.min(maxN, rows.length);
+    for (var i = 0; i < cap; i++) {
+      var r = rows[i];
+      var body = rowBodyForList(r);
+      out.push({
+        type: type,
+        label: rowLocationLabel(r),
+        body: truncateStr(body, 220),
+        amt: r.amount,
+        date: (r.dateHint && String(r.dateHint)) ? String(r.dateHint) : (extractDisplayDate(body) || '')
+      });
+    }
+    return { lines: out, total: rows.length };
+  }
+
+  function pushHistoryFromCurrent(main, persons, matchCount) {
+    if (!main || !main.bundle || !matchCount) return;
+    var b = main.bundle;
+    var pdfSummary = '';
+    if (pendingFiles && pendingFiles.length) {
+      pdfSummary = pendingFiles.map(function(f) { return f.name || ''; }).filter(Boolean).join(' · ');
+    }
+    if (!pdfSummary) pdfSummary = originalName || 'PDF';
+    var scSnap = snapshotRowsForHistory(b.credits, 'credit', HISTORY_PREVIEW_LINES);
+    var sdSnap = snapshotRowsForHistory(b.debits, 'debit', HISTORY_PREVIEW_LINES);
+    var suSnap = snapshotRowsForHistory(b.unknown, 'unknown', 8);
+    var entry = {
+      id: String(Date.now()) + '-' + Math.random().toString(36).slice(2, 9),
+      t: Date.now(),
+      filterDesc: b.filterDescription || '',
+      pdfSummary: truncateStr(pdfSummary, 400),
+      people: persons.map(function(p) {
+        return { name: (p.name || '').trim(), phone: (p.phone || '').trim() };
+      }),
+      nMatches: matchCount,
+      sumCredit: b.sumCredit,
+      sumDebit: b.sumDebit,
+      nCredit: b.nCredit,
+      nDebit: b.nDebit,
+      nUnknown: b.nUnknown,
+      credits: scSnap.lines,
+      debits: sdSnap.lines,
+      creditsTotal: scSnap.total,
+      debitsTotal: sdSnap.total,
+      unknown: suSnap.lines,
+      unknownTotal: suSnap.total
+    };
+    var list = readHistory();
+    list.unshift(entry);
+    writeHistory(list);
+  }
+
+  function historySnapshotLineHtml(line) {
+    var cls = line.type === 'debit' ? 'd' : line.type === 'unknown' ? 'u' : 'c';
+    var amt = line.amt != null && !isNaN(line.amt) ? '<span class="amt">' + formatINR(line.amt) + '</span>' : '';
+    var dateEl = line.date ? '<span class="tx-date">' + esc(line.date) + '</span> · ' : '';
+    var pg = '<span class="pg">' + dateEl + esc(line.label) + '</span>';
+    var safe = esc(line.body || '');
+    return '<div class="tx-line ' + cls + '">' + amt + pg + safe + '</div>';
+  }
+
+  function historyCardHtml(entry) {
+    var when = '';
+    try {
+      when = new Date(entry.t).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+    } catch (e2) {
+      when = '';
+    }
+    var nCT = typeof entry.creditsTotal === 'number' ? entry.creditsTotal : (entry.credits && entry.credits.length) || 0;
+    var nDT = typeof entry.debitsTotal === 'number' ? entry.debitsTotal : (entry.debits && entry.debits.length) || 0;
+    var moreC = nCT > entry.credits.length ? '<div class="history-more">+' + (nCT - entry.credits.length) + ' more credit line(s) in this run</div>' : '';
+    var moreD = nDT > entry.debits.length ? '<div class="history-more">+' + (nDT - entry.debits.length) + ' more debit line(s) in this run</div>' : '';
+    var unkBlock = '';
+    if (entry.unknown && entry.unknown.length) {
+      unkBlock = '<div class="tx-block"><h3 class="u">Other / unclear</h3>' + entry.unknown.map(historySnapshotLineHtml).join('') + '</div>';
+    }
+    var bodyHtml = '';
+    bodyHtml += '<div class="summary-strip">';
+    bodyHtml += '<div class="summary-pill c"><div class="lbl">Their credits (matching lines)</div><div class="val">' + formatINR(entry.sumCredit) + '</div><div class="lbl" style="margin-top:6px">' + entry.nCredit + ' line(s) classified credit</div></div>';
+    bodyHtml += '<div class="summary-pill d"><div class="lbl">Their debits (matching lines)</div><div class="val">' + formatINR(entry.sumDebit) + '</div><div class="lbl" style="margin-top:6px">' + entry.nDebit + ' line(s) classified debit</div></div>';
+    bodyHtml += '</div>';
+    bodyHtml += '<div class="tx-block"><h3 class="c">Credit transactions — matching your search</h3>';
+    if (!entry.credits.length) bodyHtml += '<div class="tx-line u">No lines classified as credit in this snapshot.</div>';
+    else bodyHtml += entry.credits.map(historySnapshotLineHtml).join('') + moreC;
+    bodyHtml += '</div>';
+    bodyHtml += '<div class="tx-block"><h3 class="d">Debit transactions — matching your search</h3>';
+    if (!entry.debits.length) bodyHtml += '<div class="tx-line u">No lines classified as debit in this snapshot.</div>';
+    else bodyHtml += entry.debits.map(historySnapshotLineHtml).join('') + moreD;
+    bodyHtml += '</div>';
+    bodyHtml += unkBlock;
+
+    return (
+      '<article class="history-card" data-history-id="' + esc(entry.id) + '">' +
+      '<div class="history-card-top">' +
+      '<div class="history-meta">' +
+      '<span class="history-time">' + esc(when) + '</span>' +
+      '<span class="history-who">Search: <strong>' + esc(entry.filterDesc || '—') + '</strong> · ' + entry.nMatches + ' matching line(s)</span>' +
+      '<span class="history-files">PDF(s): ' + esc(entry.pdfSummary || '—') + '</span>' +
+      '</div>' +
+      '<div class="history-actions">' +
+      '<button type="button" class="btn-history-apply" data-history-id="' + esc(entry.id) + '">Use these names</button>' +
+      '<button type="button" class="btn-history-remove" data-history-id="' + esc(entry.id) + '">Remove</button>' +
+      '</div></div>' +
+      '<div class="history-card-body">' + bodyHtml + '</div></article>'
+    );
+  }
+
+  function renderHistoryPanel() {
+    var sec = $('history-section');
+    var list = $('history-list');
+    if (!sec || !list) return;
+    var arr = readHistory();
+    if (!arr.length) {
+      sec.classList.remove('visible');
+      list.innerHTML = '';
+      return;
+    }
+    sec.classList.add('visible');
+    list.innerHTML = arr.map(historyCardHtml).join('');
+  }
+
+  function removeHistoryEntry(id) {
+    var arr = readHistory().filter(function(x) { return x.id !== id; });
+    writeHistory(arr);
+    renderHistoryPanel();
+  }
+
+  function replacePersonRowsFromHistory(peopleArr) {
+    peopleArr = peopleArr || [];
+    var container = $('persons');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!peopleArr.length) {
+      addPersonRow();
+      return;
+    }
+    for (var i = 0; i < peopleArr.length; i++) {
+      addPersonRow();
+      var rows = container.querySelectorAll('.person-row');
+      var row = rows[rows.length - 1];
+      var ni = row.querySelector('[data-field="name"]');
+      var pi = row.querySelector('[data-field="phone"]');
+      if (ni) ni.value = peopleArr[i].name || '';
+      if (pi) pi.value = peopleArr[i].phone || '';
+    }
+  }
+
   function renderMatches(matches, persons) {
     persons = persons || [];
     lastMatches = [];
@@ -947,6 +1152,10 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
     box.innerHTML = html;
     $('result-count').textContent = matches.length + ' matching line' + (matches.length === 1 ? '' : 's') + ' · ' + part.credits.length + ' credit · ' + part.debits.length + ' debit';
     $('result-wrap').style.display = 'block';
+    try {
+      pushHistoryFromCurrent(main, persons, matches.length);
+    } catch (histErr) { /* ignore storage / snapshot errors */ }
+    renderHistoryPanel();
   }
 
   function addPersonRow() {
@@ -968,6 +1177,38 @@ footer a{color:#ffd166;font-weight:600;text-decoration:none}
   }
 
   addPersonRow();
+
+  var historyListEl = $('history-list');
+  if (historyListEl) {
+    historyListEl.addEventListener('click', function(e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var rm = t.closest('.btn-history-remove');
+      var ap = t.closest('.btn-history-apply');
+      var id = (rm && rm.getAttribute('data-history-id')) || (ap && ap.getAttribute('data-history-id'));
+      if (!id) return;
+      if (rm) {
+        e.preventDefault();
+        removeHistoryEntry(id);
+        return;
+      }
+      if (ap) {
+        e.preventDefault();
+        var arr = readHistory();
+        var found = null;
+        for (var hi = 0; hi < arr.length; hi++) {
+          if (arr[hi].id === id) { found = arr[hi]; break; }
+        }
+        if (!found || !found.people) {
+          showStatus('Could not restore that search.', false);
+          return;
+        }
+        replacePersonRowsFromHistory(found.people);
+        showStatus('Names and phones filled from history. Tap Find matching transactions when your PDFs are loaded.', 'info');
+      }
+    });
+  }
+  renderHistoryPanel();
 
   $('drop-zone').addEventListener('click', function(e) {
     if (e.target.id === 'btn-pick' || e.target.closest && e.target.closest('.btn-pick')) return;
