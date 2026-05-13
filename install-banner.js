@@ -1,6 +1,6 @@
 /**
- * Suggest installing PDF Forge as an app (PWA). The install sheet title comes from
- * /manifest.json ("PDF Forge"). On Android this is "Add to Home screen" / Install app — not a separate APK file.
+ * Suggest installing PDF Forge as an app (PWA). Install name comes from /manifest.json ("PDF Forge").
+ * Home page (index): set window.PDF_FORGE_INSTALL_IMMEDIATE=1 before this script to show the bar immediately on load/reload.
  */
 (function () {
   'use strict';
@@ -8,6 +8,7 @@
   var STORAGE_KEY = 'pdfForgeInstallDismissedUntil';
   var DISMISS_DAYS = 14;
   var APP_NAME = 'PDF Forge';
+  var HOME_IMMEDIATE = !!window.PDF_FORGE_INSTALL_IMMEDIATE;
 
   function dismissed() {
     try {
@@ -89,23 +90,65 @@
     return navigator.serviceWorker.register('/sw.js').catch(function () {});
   }
 
-  if (isStandalone()) return;
+  function tryInstallOrHint() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(function () {
+        deferredPrompt = null;
+        dismiss();
+      });
+      return;
+    }
+    var t = document.querySelector('#pdf-forge-install-banner p');
+    if (t) {
+      t.textContent =
+        'Use your browser menu: look for “Install app”, “Add to Home screen”, or “Install PDF Forge”. ' +
+        'That pins this site — it is not a separate APK from an app store.';
+    }
+  }
 
-  var softNudgeTimer = setTimeout(function () {
-    if (dismissed() || isStandalone() || document.getElementById('pdf-forge-install-banner')) return;
-    if (deferredPrompt) return;
+  function mountHomeImmediate() {
+    if (isIosSafari()) {
+      mountBanner({
+        message:
+          'Add ' +
+          APP_NAME +
+          ' to your Home Screen: tap Share, then “Add to Home Screen”. Opens like an app.',
+        installLabel: 'OK',
+        onInstallClick: dismiss
+      });
+      return;
+    }
     mountBanner({
       message:
-        'Pin ' +
+        'Install ' +
         APP_NAME +
-        ' on your device: open the browser menu and choose “Install app” or “Add to Home screen” when your browser offers it.',
-      installLabel: 'Got it',
-      onInstallClick: dismiss
+        ' for quick access — use the button below when your browser is ready, or the ⋮ menu → “Install app” / “Add to Home screen”. (Web install; not a Play Store APK.)',
+      installLabel: 'Install ' + APP_NAME,
+      onInstallClick: tryInstallOrHint
     });
-  }, 10000);
+  }
+
+  if (isStandalone()) return;
+
+  var softNudgeTimer = null;
+  if (!HOME_IMMEDIATE) {
+    softNudgeTimer = setTimeout(function () {
+      if (dismissed() || isStandalone() || document.getElementById('pdf-forge-install-banner')) return;
+      if (deferredPrompt) return;
+      mountBanner({
+        message:
+          'Pin ' +
+          APP_NAME +
+          ' on your device: open the browser menu and choose “Install app” or “Add to Home screen” when your browser offers it.',
+        installLabel: 'Got it',
+        onInstallClick: dismiss
+      });
+    }, 10000);
+  }
 
   window.addEventListener('beforeinstallprompt', function (e) {
-    clearTimeout(softNudgeTimer);
+    if (softNudgeTimer) clearTimeout(softNudgeTimer);
     e.preventDefault();
     deferredPrompt = e;
     var old = document.getElementById('pdf-forge-install-banner');
@@ -127,10 +170,15 @@
     });
   });
 
+  if (HOME_IMMEDIATE && !dismissed() && !isStandalone()) {
+    mountHomeImmediate();
+  }
+
   registerSw().then(function () {
     if (dismissed() || isStandalone()) return;
+    if (HOME_IMMEDIATE) return;
     if (isIosSafari()) {
-      clearTimeout(softNudgeTimer);
+      if (softNudgeTimer) clearTimeout(softNudgeTimer);
       mountBanner({
         message:
           'Add ' +
